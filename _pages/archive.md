@@ -4,7 +4,7 @@ permalink: /archive/
 title: Posts Archive
 ---
 
-
+<!-- 
 <div id="archives">
   <section id="archive">
      <h3>Most Recent Posts</h3>
@@ -30,4 +30,4 @@ title: Posts Archive
       </ul>
     <h3>Oldest Posts</h3>
   </section>
-</div>
+</div> -->
