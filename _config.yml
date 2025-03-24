@@ -12,7 +12,7 @@ author: Reuben Stern
 description: Conductor, mathematician, person who likes to nerd out
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
-avatar: /images/reverie.png
+avatar: 
 
 #
 # Flags below are optional
@@ -99,4 +99,13 @@ exclude:
   - LICENSE
   - README.md
   - CNAME
+
+# Add MathJax support for all posts by default
+defaults:
+  -
+    scope:
+      path: ""
+      type: "posts"
+    values:
+      mathjax: true
 
