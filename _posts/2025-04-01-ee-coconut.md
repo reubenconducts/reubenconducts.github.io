@@ -41,12 +41,14 @@ While we assume basic familiarity with the transformer architecture in this blog
 >1. An **embedding layer** that maps tokens to vectors in some fixed-dimensional vector space, of dimension far smaller than the vocabulary size.
 >2. A stack of **attention layers**, each consisting of a handful of attention heads and a feed-forward layer.
 >3. A **projection layer** that maps the output of the final attention layer to a vector in the vocabulary space.
->
-> We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens, $\vec{x}_{<t} = (x_1, x_2, \dots, x_{t-1})$ to denote the sequence of tokens excluding the last one, and $p(x_t \mid \vec{x}_{<t})$ to denote the probability of the next token given the previous tokens. For the sake of concision, we will write $\mathcal{N}_i(\vec{x})$ to denote the $i$-th next-token prediction of the LM for the sequence $\vec{x}$.
->
-> This is defined recursively: given the $i$-th next-token prediction $\mathcal{N}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathcal{N}_{i+1}(\vec{x})$ is defined as
->
-> $$\mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)$$
+
+We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens, $\vec{x}_{<t} = (x_1, x_2, \dots, x_{t-1})$ to denote the sequence of tokens excluding the last one, and $p(x_t \mid \vec{x}_{<t})$ to denote the probability of the next token given the previous tokens. For the sake of concision, we will write $\mathcal{N}_i(\vec{x})$ to denote the $i$-th next-token prediction of the LM for the sequence $\vec{x}$.
+
+This is defined recursively: given the $i$-th next-token prediction $\mathcal{N}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathcal{N}_{i+1}(\vec{x})$ is defined as
+
+$$\mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)$$
+
+{: .definition style="border: 1px solid var(--border-color, #ccc); padding: 10px 15px; margin: 20px 0; border-radius: 3px; background-color: transparent;"}
 
 
 > **Aside**
