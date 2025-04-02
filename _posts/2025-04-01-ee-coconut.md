@@ -32,6 +32,9 @@ In this blog post, we will address both of these goals by describing joint work-
 
 While we assume basic familiarity with the transformer architecture in this blog post, we provide a brief overview for convenience and to set notation.
 
+- language model
+- transfomer language model
+
 
 > **Definition 1** 
 > For our purposes, a **language model (LM)** is a neural network that takes as input a sequence of *tokens* and outputs a next-token prediction. An LM consists of three components:
@@ -77,7 +80,7 @@ While we assume basic familiarity with the transformer architecture in this blog
 > **Definition 3**
 >
 > An **attention layer** consists of
-> - A stack of attention heads $h_1, \dots, h_H$ for some integer $H$, combining to give a multi-head attention block \textsf{MHA}_{h_1, \dots, h_H}(X)
+> - A stack of attention heads $h_1, \dots, h_H$ for some integer $H$, combining to give a multi-head attention block $\textsf{MHA}_{h_1, \dots, h_H}(X)$
 > - A feed-forward layer $\textsf{MLP}(Y)$, often taken to have one hidden layer.
 >
 > The forward pass of the complete attention layer is given by
@@ -95,7 +98,7 @@ While the majority of the parameters in an LM are in the transformer layer MLPs,
 
 For years, it has been known that neural networks have extensive redundancy in their weights ([Le Cun et al. (1990)](https://proceedings.neurips.cc/paper_files/paper/1989/file/6c9882bbac1c7093bd25041881277658-Paper.pdf), [Han et al. (2015)](https://arxiv.org/pdf/1506.02626), [Frankle and Carbin (2019)](https://arxiv.org/pdf/1803.03635)), and that pruning these weights can lead to significant gains in efficiency with little-to-no loss in accuracy. Not all weights in a network are used as frequently as others in a given forward pass: 
 
-
+[TODO: mention that redundancy comes from training]
 
 
 # Chain-of-Thought Prompting
