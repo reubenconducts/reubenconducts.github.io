@@ -46,9 +46,7 @@ While we assume basic familiarity with the transformer architecture in this blog
 >
 > This is defined recursively: given the $i$-th next-token prediction $\mathcal{N}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathcal{N}_{i+1}(\vec{x})$ is defined as
 >
-> $$
-> \mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)
-> $$
+> $$\mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)$$
 
 
 > **Aside**
@@ -173,7 +171,7 @@ In the absence of a suitable "teacher" LM for knowledge distillation, it would b
 
 > Compared to ICoT-KD, Stepwise Internalization has three advantages:
 > First, it is simpler to implement as it does not require a teacher model. Second, while ICoT-KD
-> internalizes reasoning into a single “column” of states (corresponding to the final input position),
+> internalizes reasoning into a single "column" of states (corresponding to the final input position),
 > Stepwise Internalization allows the model to internalize reasoning across all input positions. Lastly,
 > Stepwise Internalization achieves better accuracy compared to ICoT-KD.
 
