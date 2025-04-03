@@ -46,7 +46,9 @@ We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens,
 
 This is defined recursively: given the $i$-th next-token prediction $\mathcal{N}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathcal{N}_{i+1}(\vec{x})$ is defined as
 
-$$\mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)$$
+$$
+\mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)
+$$
 
 > **Aside**
 >
@@ -93,10 +95,27 @@ While the majority of the parameters in an LM are in the transformer layer MLPs,
 # Structured Pruning
 
 
-For years, it has been known that neural networks have extensive redundancy in their weights ([Le Cun et al. (1990)](https://proceedings.neurips.cc/paper_files/paper/1989/file/6c9882bbac1c7093bd25041881277658-Paper.pdf), [Han et al. (2015)](https://arxiv.org/pdf/1506.02626), [Frankle and Carbin (2019)](https://arxiv.org/pdf/1803.03635)), and that pruning these weights can lead to significant gains in efficiency with little-to-no loss in accuracy. Not all weights in a network are used as frequently as others in a given forward pass: 
+For years, it has been known that neural networks have extensive redundancy in their weights ([Le Cun et al. (1990)](https://proceedings.neurips.cc/paper_files/paper/1989/file/6c9882bbac1c7093bd25041881277658-Paper.pdf), [Han et al. (2015)](https://arxiv.org/pdf/1506.02626), [Frankle and Carbin (2019)](https://arxiv.org/pdf/1803.03635)), and that pruning these weights can lead to significant gains in efficiency with little-to-no loss in accuracy. Large neural networks exhibit a phenomenon known as **double descent** ([Belkin et al. 2019](https://arxiv.org/abs/1812.11118) for the original paper and [a lucid exposition](https://arxiv.org/pdf/2303.14151)), where a model appears to overfit in training (as is predicted by statistical learning theory) before beginning to generalize. The intuition behind this unintuitive result is that large models have sub-networks that generalize better than the network as a whole. These sub-networks are highly contingent on the randomization of weights at the beginning of training and emerge only through the training process. That is to say, while the entirety of the network may not be terribly useful during inference, it is critical during training. 
 
-[TODO: mention that redundancy comes from training]
+As a result, large swaths of neural networks may be deleted in their entirety (outright, or in a task-specific manner) with essentially no decrease in accuracy. Determining which parts are worth keeping is a challenging task: in an MLP with three hidden layers each 10 neurons, the "minimal subnetwork" may have only 9 neurons total, but determining which these are could take a search of over 14 million possibilities (each of which would need to be evaluated on a sufficiently large validation set). A more efficient yet slightly sub-optimal process for pruning models would be beneficial, and this comes in the form of **structured pruning**. 
 
+## Pruning Attention Heads
+
+As we noted above, attention is the most compute-intensive aspect of LMs as sequence length grows. We can save a large amount of computation by removing entire attention heads, directly inputting zeros into the MLP layer where their outputs would be. Suppose we have an LM with 8 attention heads, embedding dimension 512, and MLP with one hidden layer of intermediate dimension 1024. Given an input sequence with 1000 tokens, the attention layer takes
+$$
+8 \times 1000 \times 512^2 + 6 \times 1000^2 \times 512 = 2,097,152,000 + 3,072,000,000 = 5,169,152,000
+$$
+FLOPs, and the MLP takes 
+$$
+16 \times 1000 \times 512^2 = 4,194,304,000
+$$
+FLOPs. If we are able to prune two attention heads in this layer, we will save 
+$$
+6 \times 1000^2 \times 128 = 768,000,000
+$$
+FLOPs in the attention layer, about 8% of FLOPs for the layer as a whole.
+
+## Pruning Entire Layers
 
 # Chain-of-Thought Prompting
 
@@ -174,10 +193,87 @@ In the absence of a suitable "teacher" LM for knowledge distillation, it would b
 > Stepwise Internalization allows the model to internalize reasoning across all input positions. Lastly,
 > Stepwise Internalization achieves better accuracy compared to ICoT-KD.
 
+## Coconut: Chain of Continuous Thought
+
+In December of 2024, researchers at Meta AI released a paper titled [Training Large Langage Models to Reason in a Continuous Latent Space (Hao et al. 2024)](https://arxiv.org/abs/2412.06769). The impetus behind their work is the idea that token generation in language models is an incredibly lossy process: when passing through the unembedding layer, a vector in $\mathbb{R}^d$ (where $d$ is the embedding dimension of the model) is quantized into one of $L$ tokens, where $L$ is the vocabulary size. Moreover, in chain of thought prompting, this can use extraneous compute resources, as the output token must then be re-embedded before passing through the first transformer layer when generating a subsequent token. The core insight in their paper—termed "Chain of Continuous Thought" or "Coconut"—is that a model could potentially gain comparable or better accuracy to "vanilla" CoT with fewer tokens and less compute used per token. 
+
+### High-Level Overview
+
+Coconut is a fine-tuning and test-time paradigm. The authors begin with a pretrained LM $$\mathcal{M} = u \circ \mathsf{Transformer} \circ e: V \to \mathbb{R}^d \to \mathbb{R}^d \to V$$, where $V$ is the set of tokens in the vocabulary and $d$ is the embedding dimension (in their paper, they take GPT-2). Step-by-step, they train $\mathcal{M}$ to use more tokens during a "latent phase" where transformer layer outputs are directly fed back into the first transformer layer, before jumping into "language mode" and generating tokens normally. They use cross-entropy loss on only the normally-generated tokens to allow the model to learn its own internal methods for solving various problems. 
+
+To be precise, given a sequence $\vec{x} = (x_1, \dots, x_n)$ of input tokens and allowing the model $\ell$ latent thoughts, the model autoregressively computes latent thoughts 
+
+$$
+t_i = \mathsf{Transformer}(e(x_1), \dots, e(x_n), t_1, \dots, t_{i-1})
+$$
+
+before allowing the normally-generated tokens $w_j$ to be generated recursively as
+
+$$
+w_j = u\left(\mathsf{Transformer}(\overbrace{e(x_1), \dots, e(x_n)}^{\text{input tokens}}, \overbrace{t_1, \dots, t_{\ell}}^{\text{latent thoughts}}, \overbrace{e(w_1), \dots, e(w_{j-1})}^{\text{normal tokens}}\right)
+$$
+
+### Results
+
+Coconut surpasses vanilla CoT on a handful of tasks ([ProntoQA](https://arxiv.org/abs/2210.01240) and ProsQA, introduced in the Coconut paper) by a wide margin, with significant decreases in token generation (ten times fewer in the case of ProntoQA), while it comes somewhat close to vanilla CoT on the [GSM8K dataset](https://arxiv.org/abs/2110.14168), with three times fewer tokens generated. These suggest that models employing Coconut are effectively learning to utilize the additional flexibility afforded to them 
+
+### Coconut Curriculum
 
 
+# Our Experimental Setup
+
+The efficiency gains seen in the Coconut paper are impressive, needing often an order of magnitude fewer tokens than vanilla CoT to achieve greater performance, but going from, say, 92 to 9 additional tokens does not provide as significant a real-world speedup: the time to first token remains unchanged, and the unembed–re-embed step skipped by Coconut is not particularly intensive computationally relative to the rest of the transformer. Hence, we propose combining structured layer pruning with Coconut to leverage the efficiency gains of the former alongside the accuracy gains of the latter. 
+
+Our hypothesis is that by first training a model on the Coconut curriculum, we teach it to reason continuously, freeing it from the restriction that it generate interpretable tokens diring each step. Thereafter, we can prune the model head-wise or layer-wise to lighten the computational load needed for continuous thought while retaining the capability of the model to utilize the continuous latent space afforded to it.
+
+> **Aside**
+> 
+> Ultimately, our goal is to train a model to *flexibly* use more or less compute as it sees fit via some form of [routing or mixture-of-experts](https://arxiv.org/pdf/2409.14107). That way, models could decide to use only certain layers or attention heads in situations where less compute is needed, but choose to use the entire model when the extra compute would be particularly helpful. 
+
+In our preliminary explorations of pruned Coconut, we work with Llama 3.2 1B, a state-of-the-art LM lightweight enough to run and be fine-tuned on a single GPU. We use the [Hugging Face](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) implementation of Llama 3.2 1B running on a single Nvidia A100 GPU.
 
 
+## Overview of the Llama 3.2 1B architecture
+
+
+Llama 3.2 1B is a decoder-only transformer, consisting of an embedding layer, a stack of 16 `LlamaDecoderLayer`s with layer normalization, and a final "LM head" projection layer. Each `LlamaDecoderLayer` contains a self-attention sublayer with 32 attention heads, a feed-forward sublayer `LlamaMLP` with `hidden_size=2048`, `intermediate_size=8192`, and `act_fn=silu`, giving a total of $2048 \times 8192 \times 2 + 8192 \times 2048 = 50,331,648$ parameters in the MLP sub-layer.
+
+
+```python
+class LlamaMLP(nn.Module):
+   def __init__(self):
+       super().__init__()
+       self.gate_proj = nn.Linear(2048, 8192)
+       self.up_proj = nn.Linear(2048, 8192)
+       self.down_proj = nn.Linear(8192, 2048)
+
+
+   def forward(self, x):
+       down_proj = self.down_proj(silu(self.gate_proj(x)) * self.up_proj(x))
+       return down_proj
+```
+
+
+Each of the 32 attention heads has query matrix of dimension $2048 \times 64$, key matrix of dimension $2048 \times 64$, and value matrix of dimension $2048 \times 64$, for a total of $2048 \times (64 \times 32) + 2048 \times (64 \times 8) + 2048 \times (64 \times 8) + 2048 \times (64 \times 32) = 12,582,912$ parameters in the attention sub-layer.
+
+
+```python
+LlamaAttention(
+ (q_proj): Linear(in_features=2048, out_features=2048, bias=False)
+ (k_proj): Linear(in_features=2048, out_features=512, bias=False)
+ (v_proj): Linear(in_features=2048, out_features=512, bias=False)
+ (o_proj): Linear(in_features=2048, out_features=2048, bias=False)
+)
+```
+These combine to give a total of $16 \times (12,582,912 + 50,331,648) = 1,006,633,024$ parameters in the model.
+
+
+> **Remark**
+>
+> The Llama 3.2 1B architecture utilizes a lightweight variant of multi-head attention called **Grouped Query Attention (GQA)** ([Ainslie et al. (2023)](https://arxiv.org/pdf/2305.13245)), wherein key and value matrices are shared across groups of query matrices. This can help greatly with the large memory requirements of multi-head attention, without enormous losses in performance.
+> This explains why `q_proj` and `k_proj` have different dimensions in the `LlamaAttention` module: across 32 attention heads, there are 32 query matrices (with hidden dimension $2048 \div 32 = 64$), but only 8 key and value matrices (with hidden dimension $512 \div 8 = 64$).
+>
+> GQA can help greatly with the large memory requirements of multi-head attention, with only small losses in accuracy. Ainslie et al. (2023) show that GQA with $H / 8$ groups can reduce the time per sample by nearly 90% while losing marginal accuracy.
 
 # Brainstorm
 
@@ -237,56 +333,3 @@ In this blog post, we will describe some methods for improving the efficiency of
 
 
 We assume a basic familiarity with the transformer architecture. Recall that a standard (decoder-only) transformer consists of a stack of *layers*, each containing a block of *attention heads* and a feed-forward layer. [finish]
-
-
-# Experimental Setup
-
-
-In our preliminary explorations of pruned CoConuT, we work with Llama 3.2 1B, a state-of-the-art LM lightweight enough to run and be fine-tuned on a single GPU. We use the [Hugging Face](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) implementation of Llama 3.2 1B running on a single Nvidia A100 GPU.
-
-
-## Overview of the Llama 3.2 1B architecture
-
-
-Llama 3.2 1B is a decoder-only transformer, consisting of an embedding layer, a stack of 16 `LlamaDecoderLayer`s with layer normalization, and a final "LM head" projection layer. Each `LlamaDecoderLayer` contains a self-attention sublayer with 32 attention heads, a feed-forward sublayer `LlamaMLP` with `hidden_size=2048`, `intermediate_size=8192`, and `act_fn=silu`, giving a total of $2048 \times 8192 \times 2 + 8192 \times 2048 = 50,331,648$ parameters in the MLP sub-layer.
-
-
-```python
-class LlamaMLP(nn.Module):
-   def __init__(self, config):
-       super().__init__()
-       self.config = config
-       self.hidden_size = config.hidden_size
-       self.intermediate_size = config.intermediate_size
-       self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=config.mlp_bias)
-       self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=config.mlp_bias)
-       self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.mlp_bias)
-       self.act_fn = ACT2FN[config.hidden_act]
-
-
-   def forward(self, x):
-       down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
-       return down_proj
-```
-
-
-Each attention head has query matrix of dimension $2048 \times 2048$, key matrix of dimension $2048 \times 512$, and value matrix of dimension $2048 \times 512$, for a total of $2048 \times 2048 + 2048 \times 512 + 2048 \times 512 + 2048 \times 2048 = 12,582,912$ parameters in the attention sub-layer.
-
-
-```python
-LlamaAttention(
- (q_proj): Linear(in_features=2048, out_features=2048, bias=False)
- (k_proj): Linear(in_features=2048, out_features=512, bias=False)
- (v_proj): Linear(in_features=2048, out_features=512, bias=False)
- (o_proj): Linear(in_features=2048, out_features=2048, bias=False)
-)
-```
-These combine to give a total of $16 \times (12,582,912 + 50,331,648) = 1,006,633,024$ parameters in the model.
-
-
-> **Remark**
->
-> The Llama 3.2 1B architecture utilizes a lightweight variant of multi-head attention called **Grouped Query Attention (GQA)** ([Ainslie et al. (2023)](https://arxiv.org/pdf/2305.13245)), wherein key and value matrices are shared across groups of query matrices. This can help greatly with the large memory requirements of multi-head attention, without enormous losses in performance.
-> This explains why `q_proj` and `k_proj` have different dimensions in the `LlamaAttention` module: across 32 attention heads, there are 32 query matrices (with hidden dimension $2048 \div 32 = 64$), but only 8 key and value matrices (with hidden dimension $512 \div 8 = 64$).
->
-> GQA can help greatly with the large memory requirements of multi-head attention, with only small losses in accuracy. Ainslie et al. (2023) show that GQA with $H / 8$ groups can reduce the time per sample by nearly 90% while losing marginal accuracy.
