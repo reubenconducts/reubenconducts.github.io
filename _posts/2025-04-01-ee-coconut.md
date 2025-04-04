@@ -29,9 +29,6 @@ In this blog post, we will address both of these goals by describing joint work-
 
 While we assume basic familiarity with the transformer architecture in this blog post, we provide a brief overview for convenience and to set notation. 
 
-- language model
-- transfomer language model
-
 > **Definition 1**
 >
 > A **language model** is a statistical model that takes in a sequence of text (split up into *tokens*) and outputs a probability distribution over the vocabulary of tokens:
@@ -42,7 +39,7 @@ While we assume basic familiarity with the transformer architecture in this blog
 
 Modern-day language models are typically implemented through the Transformer architecture ([Vaswani et al. (2017)](https://arxiv.org/abs/1706.03762)), and we will focus on these in this post.
 
-> **Definition 1** 
+> **Definition 2** 
 > A **(decoder-only) Transformer language model** (or **LM** for brevity) is a neural network language model consisting of three sections:
 >1. An **embedding layer** that maps tokens to vectors in some fixed-dimensional vector space, of dimension far smaller than the vocabulary size.
 >2. A stack of **attention layers**, each consisting of a handful of attention heads and a feed-forward layer.
@@ -75,7 +72,7 @@ The embedding and projection layers of an LM are learned independently from the 
 **Attention**, specifically self-attention, is the backbone of LMs, allowing them to learn dependencies between any two tokens in a sequence. For a lucid exposition of the attention mechanism, see [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/). For the purposes of this blog post, we will only need the following:
 
 
-> **Definition 2**
+> **Definition 3**
 >
 > An **attention head** consists of a *query* matrix $W^{(q)}$, a *key* matrix $W^{(k)}$, and a *value* matrix $W^{(v)}$, each with dimension $d \times d$, where $d$ is the embedding dimension of the model. The forward pass is computed as follows:
 > - Given an input matrix $X$ of dimension $n \times d$ (corresponding to a sequence of $n$ tokens), the attention head computes matrices
@@ -91,7 +88,7 @@ The embedding and projection layers of an LM are learned independently from the 
 
 The Transformer combines attention heads with fully-connected feed-forward networks to add in nonlinearity needed for the model to posess flexibility.
 
-> **Definition 3**
+> **Definition 4**
 >
 > An **attention layer** (or *transformer block*) consists of
 > - A stack of attention heads $h_1, \dots, h_H$ for some integer $H$, combining to give a multi-head attention block $\textsf{MHA}(X) = \textsf{MHA}_{h_1, \dots, h_H}(X)$
@@ -162,9 +159,13 @@ $$
 6 \times 1000^2 \times 128 = 768,000,000
 $$
 
-FLOPs in the attention layer, about 8% of FLOPs for the layer as a whole.
+FLOPs in the attention sub-layer, about 8% of FLOPs for the layer as a whole. If we are able to prune 6 attention heads, we'd save over 25% of FLOPs for the layer. 
+
+This may not be as drastic or damaging as it sounds: results by [Voita et al. (2019)](https://arxiv.org/pdf/1905.09418) show that upwards of 90% of attention heads in some layers can be pruned with only a little impact on performance. Therein, the authors expand the idea of **layer-wise relevance propagation** (until then used for relevance of specific neurons, see [Bach et al. (2015)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140)) to determine relevance of attention heads for specific tasks. By fine-tuning a transformer with a regularizing objective that encourages attention-head dropout, they were able to cut heads in half across the model as a whole with only 1% loss in accuracy. 
 
 ## Pruning Entire Layers
+
+Many techniques for pruning models are subtle: excising single neurons or even attention heads. What about entire layers? 
 
 # Chain-of-Thought Prompting
 
@@ -175,13 +176,13 @@ One of the most successful strategies for improving LM reasoning ability has bee
 Chain-of-thought prompting was first introduced in a [landmark paper](https://arxiv.org/pdf/2201.11903) by Wei et al. in 2022. Therein, the authors demonstrate on multiple LMs of multiple sizes that training a model to verbalize its reasoning can lead to significant gains in reasoning ability on certain complex reasoning tasks.
 
 
-<div style="display: flex; align-items: center; margin-bottom: 20px;">
- <div style="margin-right: 20px; flex-shrink: 0; width: 30%; font-size: 0.9em;">
-   <strong>Figure 1:</strong> Summary of results from Wei et al. (2022). They study three different datasets including GSM8K (a dataset of grade-school math word problems) with three groups of models of varying sizes. Their results show that CoT prompting leads to significant reasoning gains on larger models when reasoning about tasks that scale roughly linearly.
- </div>
- <div>
-   <img src="../images/cot_original_summary.png" alt="Description of image" style="max-width: 100%;">
- </div>
+<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-bottom: 20px; align-items: center;">
+  <div style="flex: 1 1 300px; margin-right: 20px; margin-bottom: 15px; font-size: 0.9em; min-width: 250px;">
+    <strong>Figure 1:</strong> Summary of results from Wei et al. (2022). They study three different datasets including GSM8K (a dataset of grade-school math word problems) with three groups of models of varying sizes. Their results show that CoT prompting leads to significant reasoning gains on larger models when reasoning about tasks that scale roughly linearly.
+  </div>
+  <div style="flex: 2 1 400px;">
+    <img src="../images/cot_original_summary.png" alt="Summary of CoT results" style="max-width: 60%; height: auto; display: block; margin: 0 auto;">
+  </div>
 </div>
 
 
@@ -223,13 +224,13 @@ Humans are very good at reasoning *without* explicitly verbalizing our reasoning
 This is precisely what [Deng et al. (2023)](https://arxiv.org/pdf/2311.01460) and [Deng et al. (2024)](https://arxiv.org/pdf/2405.14838v1) investigated in their papers "Implicit Chain-of-Thought Reasoning via Knowledge Distillation" and "From Explicit CoT to Implicit CoT: Learning to Internalize CoT Step by Step". Both papers explore different ways to have models internalize their CoT process, theoretically allowing them to solve tasks that have required CoT without the additional token generation overhead. Via [knowledge distillation](https://arxiv.org/abs/2402.13116), they are able to achieve nearly identical performance to explicit CoT prompting with nearly 5x faster inference.
 
 
-<div style="display: flex; align-items: center; margin-bottom: 20px;">
- <div style="margin-right: 20px; flex-shrink: 0; width: 30%; font-size: 0.9em;">
-   <strong>Figure 2:</strong> Summary of results from Deng et al. (2023). They study GSM8K, 4-digit multiplication, and 5-digit multiplication. They compare reasoning without CoT (No-CoT), with explicit CoT, and with implicit CoT via knowledge distillation.
- </div>
- <div>
-   <img src="../images/implicit_knowledge_distill.png" alt="Description of image" style="max-width: 100%;">
- </div>
+<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-bottom: 20px; align-items: center;">
+  <div style="flex: 1 1 300px; margin-right: 20px; margin-bottom: 15px; font-size: 0.9em; min-width: 250px;">
+    <strong>Figure 2:</strong> Summary of results from Deng et al. (2023). They study GSM8K, 4-digit multiplication, and 5-digit multiplication. They compare reasoning without CoT (No-CoT), with explicit CoT, and with implicit CoT via knowledge distillation.
+  </div>
+  <div style="flex: 2 1 400px;">
+    <img src="../images/implicit_knowledge_distill.png" alt="Summary of implicit CoT results" style="max-width: 80%; height: auto; display: block; margin: 0 auto;">
+  </div>
 </div>
 
 
