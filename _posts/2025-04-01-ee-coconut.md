@@ -48,7 +48,8 @@ Modern-day language models are typically implemented through the Transformer arc
 >2. A stack of **attention layers**, each consisting of a handful of attention heads and a feed-forward layer.
 >3. A **projection layer** that maps the output of the final attention layer to a vector in the vocabulary space.
 
-We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens. To generate the next token, models may employ a handful of decision techniques, the most common being **top-$p$-sampling**, where the model computes $p(x_{t+1} | \vec{x})$ for all $x_{t+1}$ in the vocabulary, chooses the smallest set of tokens whose cumulative probability is greater than some threshhold $p$, and then samples one token from this top-$p$ set (renormalizing their probabilities to sum to 1). This allows for a small amount of randomness in token generation, leading to models that do not get stuck in circles of echolalia. 
+
+We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens. To generate the next token, models may employ a handful of decision techniques, the most common being **top-$p$-sampling**, where the model computes $p(x_{t+1} \vert \vec{x})$ for all $x_{t+1}$ in the vocabulary, chooses the smallest set of tokens whose cumulative probability is greater than some threshhold $p$, and then samples one token from this top-$p$ set (renormalizing their probabilities to sum to 1). This allows for a small amount of randomness in token generation, leading to models that do not get stuck in circles of echolalia. 
 
 For the sake of concision, we will write $\mathsf{N}^{\mathcal{L}}_i(\vec{x})$ to denote the $i$-th next-token prediction of the LM $\mathcal{L}$ for the sequence $\vec{x}$ (here, $\mathsf{N}$ stands for "next").
 
@@ -116,24 +117,33 @@ Let's do a quick calculation to determine how many FLOPs are used in the forward
 - MLP intermediate layer size $d_\textsf{MLP}$, taken to be $4d$ as is common
 
 To start, let's consider multi-head attention. Given our input sequence, a tensor $X$ of dimension $[N, d]$, for each attention head $h_i$, we perform for the multiplications $Q_i = XW_i^{(q)}, K_i = XW_i^{(k)}$, and $V_i = XW_i^{(v)}$, where each of $W_i^{(q, k, v)}$ has dimension $[d, d_h]$. This gives
+
 $$
 3 \cdot (2 \cdot N \cdot d \cdot d_h) \cdot H = 6 \cdot N \cdot d^2
 $$
+
 FLOPs, counting multiply-adds as 2 FLOPs. Next, for each head we compute the attention score $\mathsf{Softmax}(Q_iK_i^\top)V$. The inner matrix multiplication takes $2 \cdot N^2 \cdot d_h$ FLOPs, while the softmax takes roughly $5N^2$ FLOPs (for each of the $N$ rows, roughly $N$ from the $\mathsf{max}$ computation, $N$ subtractions, $N$ exponentiations, $N$ additions, and $N$ divisions). The outer matrix multiplication takes another $2N^2d_h$ FLOPs, giving a total of 
+
 $$
 6Nd^2 + 4N^2d + 5N^2H
 $$
+
 FLOPs in the multi-head attention sub-layer. 
 
 Moving onto the MLP, we have one layer of shape $[d, 4d]$ and another of shape $[4d, d]$. Passing the output of attention through, we have $2 \cdot N \cdot d \cdot 4d$ FLOPs per layer, giving a total of
+
 $$
-16Nd^2$$
+16Nd^2
+$$
+
 FLOPs in the MLP. 
 
 Because layer norm and adding the residual stream are negligible computationally in larger models, we will ignore them. In the end, the approximate FLOPs of a single attention layer is
+
 $$
 24Nd^2 + 4N^2d + 5N^2H = 24Nd^2 + N^2(4d + 5H)~.
 $$
+
 Taking a common $d = 512$ and $H = 8$, the $N^2$ term dominates at sequences of length >2900, which are commonplace in reasoning chains. This is to say, attention takes over as the most computationally intensive part of the model with larger sequence lengths (even though the majority of parameters are in the MLPs!).
 
 # Structured Pruning
@@ -145,9 +155,11 @@ As a result, large swaths of neural networks may be deleted in their entirety (o
 ## Pruning Attention Heads
 
 As we noted above, attention is the most compute-intensive aspect of LMs as sequence length grows very long. We can save a large amount of computation by removing entire attention heads, directly inputting zeros into the MLP layer where their outputs would be. Suppose we have an LM with 8 attention heads, embedding dimension 512, and MLP with one hidden layer of intermediate dimension 1024. Given an input sequence with 1000 tokens, the attention layer takes 5,169,152,000 FLOPs and the MLP takes 4,194,304,000 FLOPs. If we are able to prune two attention heads in this layer, we will save 
+
 $$
 6 \times 1000^2 \times 128 = 768,000,000
 $$
+
 FLOPs in the attention layer, about 8% of FLOPs for the layer as a whole.
 
 ## Pruning Entire Layers
