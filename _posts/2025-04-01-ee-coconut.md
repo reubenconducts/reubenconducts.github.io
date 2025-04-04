@@ -6,22 +6,19 @@ mathjax: true
 ---
 
 
-Language models (LM) trained on next-token prediction have exhibited impressive performance on a wide variety of tasks, from language modeling to code generation to translation. Very large language models (LLMs), some with over a trillion parameters, have been shown to solve basic reasoning tasks, like arithmetic and state tracking. Smaller models, however, continue to struggle with these tasks, even state-of-the-art models when tasked with grade-school arithmetic.
+Language models (LM) have exhibited impressive performance on a wide variety of tasks, from language modeling to translation. Very large language models have been shown to solve basic reasoning tasks, like arithmetic, coding, and state tracking. Smaller models, however, continue to struggle with even very basic reasoning: Gemma 3-4B, a 4 billion parameter model released this March, reaches only 38.4% accuracy on grade-school arithmetic tasks ([Gemma 3 technical report](https://arxiv.org/abs/2503.19786v1)).
 
+In the past few years, *inference-time scaling* has emerged as the predominant paradigm for improving LM reasoning capabilities. The more tokens we allow LMs to generate *during* inference, the deeper reasoning problems they are able to solve. This approach underlies OpenAI's recent o-series and Deepseek's r1 models, which leverage specific and additional inference-time compute to achieve state-of-the-art results on reasoning tasks. Scaling inference-time compute can be quite computationally expensive, though; this is a potential bottleneck as LMs are increasingly used in real-world applications where inference time is critical or compute and memory resources are limited. Thus, two orthogonal optimization goals have emerged: increasing the accuracy of the model on complex reasoning tasks and decreasing the computational cost of inference.
 
-As LMs increasingly integrate into our daily lives, two orthogonal optimization goals have emerged: increasing the accuracy of the model on complex reasoning tasks and decreasing the computational cost of inference, which is critical for running models on lower-powered devices like personal computers and smartphones. Few people carry H100s in their pockets, but we all carry phones!
+In this blog post, we will discuss several means for decreasing the computational cost of inference in reasoning tasks, which broadly fall into two categories:
 
-
-There are (at least!) two means for decreasing the computational cost of inference in reasoning tasks:
-
-
-1. **Decrease the size of the model**
-   - Quantize the model (using low-floating-point arithmetic)
-   - Use model compression techniques
-   - *Prune* the model (remove parameters)
-2. **Decrease the total number of computations**
-   - Encourage the LM to generate fewer tokens during reasoning
-   - Force the LM to skip certain steps in its forward pass
+1. **Decreasing the size of the model**
+   - Quantizing the model (using low-floating-point arithmetic)
+   - Using model compression techniques
+   - *Pruning* the model (remove parameters)
+2. **Decreasing the total number of computations**
+   - Encouraging the LM to generate fewer tokens during reasoning
+   - Forcing the LM to skip certain steps in its forward pass
 
 
 In this blog post, we will address both of these goals by describing joint work-in-progress with Belinda Li on 1) structured pruning of LMs and 2) *continuous chain-of-thought* prompting.
@@ -30,30 +27,44 @@ In this blog post, we will address both of these goals by describing joint work-
 # *Aide-mémoire* on Language Models
 
 
-While we assume basic familiarity with the transformer architecture in this blog post, we provide a brief overview for convenience and to set notation.
+While we assume basic familiarity with the transformer architecture in this blog post, we provide a brief overview for convenience and to set notation. 
 
 - language model
 - transfomer language model
 
+> **Definition 1**
+>
+> A **language model** is a statistical model that takes in a sequence of text (split up into *tokens*) and outputs a probability distribution over the vocabulary of tokens:
+>
+> $$
+> p(x_1, x_2, \dots, x_{t-1})
+> $$
+
+Modern-day language models are typically implemented through the Transformer architecture ([Vaswani et al. (2017)](https://arxiv.org/abs/1706.03762)), and we will focus on these in this post.
 
 > **Definition 1** 
-> For our purposes, a **language model (LM)** is a neural network that takes as input a sequence of *tokens* and outputs a next-token prediction. An LM consists of three components:
+> A **(decoder-only) Transformer language model** (or **LM** for brevity) is a neural network language model consisting of three sections:
 >1. An **embedding layer** that maps tokens to vectors in some fixed-dimensional vector space, of dimension far smaller than the vocabulary size.
 >2. A stack of **attention layers**, each consisting of a handful of attention heads and a feed-forward layer.
 >3. A **projection layer** that maps the output of the final attention layer to a vector in the vocabulary space.
 
-We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens, \\(\vec{x}_{<t} = (x_1, x_2, \dots, x_{t-1})\\) to denote the sequence of tokens excluding the last one, and $p(x_t \mid \vec{x}_{<t})$ to denote the probability of the next token given the previous tokens. For the sake of concision, we will write $\mathcal{N}_i(\vec{x})$ to denote the $i$-th next-token prediction of the LM for the sequence $\vec{x}$.
+We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens. To generate the next token, models may employ a handful of decision techniques, the most common being **top-$p$-sampling**, where the model computes $p(x_{t+1} | \vec{x})$ for all $x_{t+1}$ in the vocabulary, chooses the smallest set of tokens whose cumulative probability is greater than some threshhold $p$, and then samples one token from this top-$p$ set (renormalizing their probabilities to sum to 1). This allows for a small amount of randomness in token generation, leading to models that do not get stuck in circles of echolalia. 
 
-This is defined recursively: given the $i$-th next-token prediction $\mathcal{N}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathcal{N}_{i+1}(\vec{x})$ is defined as
+For the sake of concision, we will write $\mathsf{N}^{\mathcal{L}}_i(\vec{x})$ to denote the $i$-th next-token prediction of the LM $\mathcal{L}$ for the sequence $\vec{x}$ (here, $\mathsf{N}$ stands for "next").
+
+This is defined recursively: given the $i$-th next-token prediction $\mathsf{N}^{\mathcal{L}}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathsf{N}^{\mathcal{L}}_{i+1}(\vec{x})$ is defined as
 
 $$
-\mathcal{N}_{i+1}(\vec{x}) = \mathcal{N}_1\left(x_1, \dots, x_t, \mathcal{N}_1(\vec{x}), \dots, \mathcal{N}_i(\vec{x})\right)
+\mathsf{N}^{\mathcal{L}}_{i+1}(\vec{x}) = \mathsf{N}^{\mathcal{L}}_1\left(\vec{x}, \mathsf{N}^{\mathcal{L}}_1(\vec{x}), \dots, \mathsf{N}^{\mathcal{L}}_i(\vec{x})\right)
 $$
 
 > **Aside**
 >
 > In this post, we will only be considering *autoregressive* LMs, those trained on next-token prediction, and not models trained on masked language modeling (like BERT).
 
+The **embedding** layer in an LM takes tokens from vocabulary space (high-dimensional but exceedingly sparse) to a "latent space" with some *hidden dimension* $d$ via an embedding that is learned to turn semantically-meaningful relationships into geometrically-meaningful ones (see [Mikolov et al. (2013)](https://arxiv.org/pdf/1301.3781) for early work and 3Blue1Brown's [excellent video (12:27)](https://www.youtube.com/watch?v=wjZofJX0v4M&t=1457s) for a visualization of this idea), while the **projection** layer does the opposite, taking vectors in latent space to vectors in vocabulary space. If generating a token, this unembedded vector will be passed to top-$p$-sampling (or some other decision technique) to output a token. 
+
+The embedding and projection layers of an LM are learned independently from the rest of the model (and in particular may be shared by families of models), so the rest is what we focus on. 
 
 ## Attention
 
@@ -63,7 +74,7 @@ $$
 
 > **Definition 2**
 >
-> - An **attention head** consists of a *query* matrix $W^{(q)}$, a *key* matrix $W^{(k)}$, and a *value* matrix $W^{(v)}$, each with dimension $d \times d$, where $d$ is the embedding dimension of the model.
+> An **attention head** consists of a *query* matrix $W^{(q)}$, a *key* matrix $W^{(k)}$, and a *value* matrix $W^{(v)}$, each with dimension $d \times d$, where $d$ is the embedding dimension of the model. The forward pass is computed as follows:
 > - Given an input matrix $X$ of dimension $n \times d$ (corresponding to a sequence of $n$ tokens), the attention head computes matrices
 >   - $Q = XW^{(q)}$
 >   - $K = XW^{(k)}$
@@ -71,29 +82,61 @@ $$
 >   of dimension $n \times d$.
 > - It then computes the **scaled dot-product attention** of $Q$, $K$, and $V$ as
 > $$
-> \textsf{Attention}(Q, K, V) = \textsf{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right)V
+> \textsf{Attention}(Q, K, V) = \textsf{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right)V~.
 > $$
-> - A model may contain multiple attention heads $h_1, \dots, h_H$, computed in parallel, the outputs of which are then concatenated to form a single *multi-head attention* tensor $\textsf{MHA}(X)$.
+> A model may contain multiple attention heads $h_1, \dots, h_H$, computed in parallel, the outputs of which are then concatenated to form a single *multi-head attention* tensor $\textsf{MHA}_{h_1, \dots, h_H}(X)$.
 
+The Transformer combines attention heads with fully-connected feed-forward networks to add in nonlinearity needed for the model to posess flexibility.
 
 > **Definition 3**
 >
-> An **attention layer** consists of
-> - A stack of attention heads $h_1, \dots, h_H$ for some integer $H$, combining to give a multi-head attention block $\textsf{MHA}_{h_1, \dots, h_H}(X)$
+> An **attention layer** (or *transformer block*) consists of
+> - A stack of attention heads $h_1, \dots, h_H$ for some integer $H$, combining to give a multi-head attention block $\textsf{MHA}(X) = \textsf{MHA}_{h_1, \dots, h_H}(X)$
 > - A feed-forward layer $\textsf{MLP}(Y)$, often taken to have one hidden layer.
 >
 > The forward pass of the complete attention layer is given by
 > $$
-> \textsf{MLP}(\textsf{LayerNorm}(\textsf{MHA}_{h_1, \dots, h_H}(\textsf{LayerNorm}(X)))) + X~,
+> \textsf{MLP}(\textsf{LayerNorm}(X + \textsf{MHA}(\textsf{LayerNorm}(X)))) + X~,
 > $$
-> where $\textsf{LayerNorm}$ is some form of layer normalization and $X$ is added onto the end as a *residual stream*.
+> where $\textsf{LayerNorm}$ is some form of layer normalization and $X$ is added onto the end of each layer as a *residual stream*.
+
+> **Aside**
+>
+> The original Transformer paper (Vaswani et al. (2017)) used a *post-layernorm* architecture, where $\mathsf{LayerNorm}$ was applied *after* $\textsf{MHA}$ and $\textsf{MLP}$, rather than before as we have done. Our *pre-layernorm* architecture has become ubiquitous. 
 
 
-While the majority of the parameters in an LM are in the transformer layer MLPs, as sequence length grows, the attention heads become the most computationally intensive component of the model. 
+While the majority of the parameters in an LM are in the transformer layer MLPs, as sequence length grows (these days, LLMs may accept sequences with upwards of 2 million tokens), the attention heads become the most computationally intensive component of the model. 
 
+### Computational Complexity of an Attention Layer
+
+Let's do a quick calculation to determine how many FLOPs are used in the forward pass of a given attention layer. Fixing notation, let's assume we have
+- embedding dimension $d$, sometimes called *hidden size*
+- number of attention heads $H$
+- per-head dimension $d_h = d / H$
+- MLP intermediate layer size $d_\textsf{MLP}$, taken to be $4d$ as is common
+
+To start, let's consider multi-head attention. Given our input sequence, a tensor $X$ of dimension $[N, d]$, for each attention head $h_i$, we perform for the multiplications $Q_i = XW_i^{(q)}, K_i = XW_i^{(k)}$, and $V_i = XW_i^{(v)}$, where each of $W_i^{(q, k, v)}$ has dimension $[d, d_h]$. This gives
+$$
+3 \cdot (2 \cdot N \cdot d \cdot d_h) \cdot H = 6 \cdot N \cdot d^2
+$$
+FLOPs, counting multiply-adds as 2 FLOPs. Next, for each head we compute the attention score $\mathsf{Softmax}(Q_iK_i^\top)V$. The inner matrix multiplication takes $2 \cdot N^2 \cdot d_h$ FLOPs, while the softmax takes roughly $5N^2$ FLOPs (for each of the $N$ rows, roughly $N$ from the $\mathsf{max}$ computation, $N$ subtractions, $N$ exponentiations, $N$ additions, and $N$ divisions). The outer matrix multiplication takes another $2N^2d_h$ FLOPs, giving a total of 
+$$
+6Nd^2 + 4N^2d + 5N^2H
+$$
+FLOPs in the multi-head attention sub-layer. 
+
+Moving onto the MLP, we have one layer of shape $[d, 4d]$ and another of shape $[4d, d]$. Passing the output of attention through, we have $2 \cdot N \cdot d \cdot 4d$ FLOPs per layer, giving a total of
+$$
+16Nd^2$$
+FLOPs in the MLP. 
+
+Because layer norm and adding the residual stream are negligible computationally in larger models, we will ignore them. In the end, the approximate FLOPs of a single attention layer is
+$$
+24Nd^2 + 4N^2d + 5N^2H = 24Nd^2 + N^2(4d + 5H)~.
+$$
+Taking a common $d = 512$ and $H = 8$, the $N^2$ term dominates at sequences of length >2900, which are commonplace in reasoning chains. This is to say, attention takes over as the most computationally intensive part of the model with larger sequence lengths (even though the majority of parameters are in the MLPs!).
 
 # Structured Pruning
-
 
 For years, it has been known that neural networks have extensive redundancy in their weights ([Le Cun et al. (1990)](https://proceedings.neurips.cc/paper_files/paper/1989/file/6c9882bbac1c7093bd25041881277658-Paper.pdf), [Han et al. (2015)](https://arxiv.org/pdf/1506.02626), [Frankle and Carbin (2019)](https://arxiv.org/pdf/1803.03635)), and that pruning these weights can lead to significant gains in efficiency with little-to-no loss in accuracy. Large neural networks exhibit a phenomenon known as **double descent** ([Belkin et al. 2019](https://arxiv.org/abs/1812.11118) for the original paper and [a lucid exposition](https://arxiv.org/pdf/2303.14151)), where a model appears to overfit in training (as is predicted by statistical learning theory) before beginning to generalize. The intuition behind this unintuitive result is that large models have sub-networks that generalize better than the network as a whole. These sub-networks are highly contingent on the randomization of weights at the beginning of training and emerge only through the training process. That is to say, while the entirety of the network may not be terribly useful during inference, it is critical during training. 
 
@@ -101,15 +144,7 @@ As a result, large swaths of neural networks may be deleted in their entirety (o
 
 ## Pruning Attention Heads
 
-As we noted above, attention is the most compute-intensive aspect of LMs as sequence length grows. We can save a large amount of computation by removing entire attention heads, directly inputting zeros into the MLP layer where their outputs would be. Suppose we have an LM with 8 attention heads, embedding dimension 512, and MLP with one hidden layer of intermediate dimension 1024. Given an input sequence with 1000 tokens, the attention layer takes
-$$
-8 \times 1000 \times 512^2 + 6 \times 1000^2 \times 512 = 2,097,152,000 + 3,072,000,000 = 5,169,152,000
-$$
-FLOPs, and the MLP takes 
-$$
-16 \times 1000 \times 512^2 = 4,194,304,000
-$$
-FLOPs. If we are able to prune two attention heads in this layer, we will save 
+As we noted above, attention is the most compute-intensive aspect of LMs as sequence length grows very long. We can save a large amount of computation by removing entire attention heads, directly inputting zeros into the MLP layer where their outputs would be. Suppose we have an LM with 8 attention heads, embedding dimension 512, and MLP with one hidden layer of intermediate dimension 1024. Given an input sequence with 1000 tokens, the attention layer takes 5,169,152,000 FLOPs and the MLP takes 4,194,304,000 FLOPs. If we are able to prune two attention heads in this layer, we will save 
 $$
 6 \times 1000^2 \times 128 = 768,000,000
 $$
@@ -274,62 +309,3 @@ These combine to give a total of $16 \times (12,582,912 + 50,331,648) = 1,006,63
 > This explains why `q_proj` and `k_proj` have different dimensions in the `LlamaAttention` module: across 32 attention heads, there are 32 query matrices (with hidden dimension $2048 \div 32 = 64$), but only 8 key and value matrices (with hidden dimension $512 \div 8 = 64$).
 >
 > GQA can help greatly with the large memory requirements of multi-head attention, with only small losses in accuracy. Ainslie et al. (2023) show that GQA with $H / 8$ groups can reduce the time per sample by nearly 90% while losing marginal accuracy.
-
-# Brainstorm
-
-
-- Sources:
-   - [Chain-of-Thought Prompting](https://arxiv.org/abs/2201.11903)
-       - Demonstrates that a LM verbalizing its reasoning can solve tasks that it is as yet unable to solve using standard prompting.
-   - [Implicit Chain-of-Thought](https://arxiv.org/abs/2405.14838v1)
-       - Trains LMs to internalize their chain-of-thought process, allowing them to solve tasks that often require chain-of-thought without the additional token generation overhead.
-   - [Attention pruning](https://arxiv.org/abs/2110.03252)
-       - Attention heads are often redundant. While the majority of LM parameters are in the MLPs, selectively pruning attention heads can lead to speedups in inference.
-   - [Layer pruning](https://arxiv.org/abs/2403.17887)
-       - Pruning entire layers of a LM can lead to significant gains in efficiency, though often at a greater performance cost (but not extreme!).
-   - [Continuous CoT](https://arxiv.org/abs/2412.06769)
-       - LMs are trained on next-token prediction. After the first token is generated, the LM then takes in the entire prompt and the generated tokens so far, re-embeds them, and processes them again. The idea of *continuous CoT* (coconut) is to input the last layer's activations back into the first layer of the model, circumventing the unembed—embed step.
-       - In doing so, the LM can reason *continuously* in latent space, rather than "quantizing" its reasoning into a discrete set of tokens. As a result, coconut allows LMs to reason more accurately than standard CoT with significant efficiency gains.
-- Brief overview of the LM transformer architecture (decoder-only)
-- Discussion of CoT prompting
-   - Introduce the GSM8K dataset
-   - Give example of CoT training data for GSM8K
-   - Present empirical results showing accuracy gains from CoT
-- Structured Pruning
-   - Discuss redundancy in LMs and model compression
-   - Discuss redundancy in attention heads and results about pruning attention heads
-   - Discuss layer pruning and results
-       - Tactics for determining which layers to remove (e.g. cosine similarity, accuracy on a validation set, angular block deletion)
-- Continuous CoT
-   - Discuss how it works (pictures if possible!)
-   - Discuss training methodology
-   - Present coconut results
-- Combining structured pruning and continuous CoT
-   - Discuss experimental setup
-       - Llama 3.2 1b
-       - GSM8K
-       - Layer pruning results before fine-tuning
-       - Attention head importance and pruning results before fine-tuning
-- Discuss upcoming work
-
-
-Transformer-based language models (LMs) have exploded in popularity since their [introduction in 2017](https://arxiv.org/abs/1706.03762). As language models have grown in size—from hundreds of millions of parameters to billions and now trillions—training and inference costs have skyrocketed. Despite their impressive performance, LMs (particularly smaller ones)still struggle with tasks that require complex reasoning. One of the most successful strategies for improving LM performance is **chain-of-thought (CoT) prompting**. At its most basic, CoT involves prompting a LM to reason through a task step-by-step, often with a series of intermediate reasoning steps.
-
-
-Transformer layer:
-$$
-\textsf{Attention}(Q_i, K_i, V_i) = \textsf{softmax}\left(\frac{Q_iK_i^\top}{\sqrt{d}}\right)V_i
-$$
-
-
-
-
-
-
-In this blog post, we will describe some methods for improving the efficiency of LM inference—structured pruning and *continuous CoT*—and discuss work-in-progress on combining them.
-
-
-# Chain-of-Thought Prompting
-
-
-We assume a basic familiarity with the transformer architecture. Recall that a standard (decoder-only) transformer consists of a stack of *layers*, each containing a block of *attention heads* and a feed-forward layer. [finish]
