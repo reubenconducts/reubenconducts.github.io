@@ -53,7 +53,9 @@ We will write $\vec{x} = (x_1, x_2, \dots, x_t)$ to denote a sequence of tokens.
 
 For the sake of concision, we will write $\mathsf{N}^{\mathcal{L}}_i(\vec{x})$ to denote the $i$-th next-token prediction of the LM $\mathcal{L}$ for the sequence $\vec{x}$ (here, $\mathsf{N}$ stands for "next").
 
-This is defined recursively: given the $i$-th next-token prediction $\mathsf{N}^{\mathcal{L}}_i(\vec{x})$, the $(i+1)$-th next-token prediction $\mathsf{N}^{\mathcal{L}}_{i+1}(\vec{x})$ is defined as
+This is defined recursively: given the <span>$i$</span>-th next-token prediction 
+<span>$\mathsf{N}^{\mathcal{L}}_i(\vec{x})$</span>, 
+the <span>$(i+1)$</span>-th next-token prediction <span>$\mathsf{N}^{\mathcal{L}}_{i+1}(\vec{x})$</span> is defined as
 
 $$
 \mathsf{N}^{\mathcal{L}}_{i+1}(\vec{x}) = \mathsf{N}^{\mathcal{L}}_1\left(\vec{x}, \mathsf{N}^{\mathcal{L}}_1(\vec{x}), \dots, \mathsf{N}^{\mathcal{L}}_i(\vec{x})\right)
