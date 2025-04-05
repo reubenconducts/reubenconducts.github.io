@@ -1,6 +1,6 @@
 ---
 layout: post
-title: I think you just fell out of a CoCONuT tree!
+title: I think you just fell out of a Coconut tree!
 categories: [LLM, Inference]
 mathjax: true
 ---
@@ -163,17 +163,20 @@ FLOPs in the attention sub-layer, about 8% of FLOPs for the layer as a whole. If
 
 This may not be as drastic or damaging as it sounds: results by [Voita et al. (2019)](https://arxiv.org/pdf/1905.09418) show that upwards of 90% of attention heads in some layers can be pruned with only a little impact on performance. Therein, the authors expand the idea of **layer-wise relevance propagation** (until then used for relevance of specific neurons, see [Bach et al. (2015)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140)) to determine relevance of attention heads for specific tasks. By fine-tuning a transformer with a regularizing objective that encourages attention-head dropout, they were able to cut heads in half across the model as a whole with only 1% loss in accuracy. 
 
+Alternatively, one may use the effiency gains from attention head pruning to create models that are even more accurate for a given parameter count ([Shim et al. (2023)](https://arxiv.org/pdf/2110.03252)).
+
 ## Pruning Entire Layers
 
-Many techniques for pruning models are subtle: excising single neurons or even attention heads. What about entire layers? 
+Many techniques for pruning models are subtle: excising single neurons or even attention heads. What about entire layers? By pruning a layer, we are able to save nearly $1/\#\textsf{layers}$ times the model FLOPs, an enormous amount. In [Gromov et al. (2025)](https://arxiv.org/pdf/2403.17887), the authors find that up to *half* of the layers in a model can be removed before experiencing noticeable accuracy gains, leading to a nearly 100% speedup in inference. The authors use *angular block distance*, a cosine similarity measure of how much a block of layers influences the residual stream, to determine which layers to delete. Interestingly, they determined that different tasks respond differently to layer deletion: performance on the GSM8K grade-school arithmetic dataset degrades almost immediately, while that on the MMLU dataset is far more robust to layer deletion.
+
+Given that layers account for nearly all FLOPs in a model, deleting layers appears to be the easiest and most immediately beneficial form of structured pruning, from a computational cost perspective. Faster inference affords models the chance to generate more tokens within the same time frame, which, as we will see below, greatly expands their reasoning capacity. 
 
 # Chain-of-Thought Prompting
 
 
-One of the most successful strategies for improving LM reasoning ability has been to prompt the model to reason through tasks step-by-step, with a series of intermediate reasoning steps. This makes intuitive sense for models trained on next-token-prediction: by performing small steps bit-by-bit, essentially tracking the state of the task, the model is more likely to maintain an accurate representation of the task at hand.
+One of the most successful strategies for improving LM reasoning ability has been to prompt the model to reason through tasks step-by-step, with a series of intermediate reasoning steps, utilizing more tokens to make up for any lack in inherent ability of the base model. This makes intuitive sense for models trained on next-token-prediction: by performing small steps bit-by-bit, essentially tracking the state of the task, the model is more likely to maintain an accurate representation of the task at hand. This approach to reasoning is called **chain of thought prompting (CoT)**.
 
-
-Chain-of-thought prompting was first introduced in a [landmark paper](https://arxiv.org/pdf/2201.11903) by Wei et al. in 2022. Therein, the authors demonstrate on multiple LMs of multiple sizes that training a model to verbalize its reasoning can lead to significant gains in reasoning ability on certain complex reasoning tasks.
+Chain-of-thought prompting was systematically studied in a [landmark paper](https://arxiv.org/pdf/2201.11903) by Wei et al. in 2022. Therein, the authors demonstrate on multiple LMs of multiple sizes that training a model to verbalize its reasoning can lead to significant gains in reasoning ability on certain complex reasoning tasks.
 
 
 <div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-bottom: 20px; align-items: center;">
@@ -181,7 +184,7 @@ Chain-of-thought prompting was first introduced in a [landmark paper](https://ar
     <strong>Figure 1:</strong> Summary of results from Wei et al. (2022). They study three different datasets including GSM8K (a dataset of grade-school math word problems) with three groups of models of varying sizes. Their results show that CoT prompting leads to significant reasoning gains on larger models when reasoning about tasks that scale roughly linearly.
   </div>
   <div style="flex: 2 1 400px;">
-    <img src="../images/cot_original_summary.png" alt="Summary of CoT results" style="max-width: 60%; height: auto; display: block; margin: 0 auto;">
+    <img src="../images/cot_original_summary.png" alt="Summary of CoT results" style="max-width: 90%; height: auto; display: block; margin: 0 auto;">
   </div>
 </div>
 
@@ -229,7 +232,7 @@ This is precisely what [Deng et al. (2023)](https://arxiv.org/pdf/2311.01460) an
     <strong>Figure 2:</strong> Summary of results from Deng et al. (2023). They study GSM8K, 4-digit multiplication, and 5-digit multiplication. They compare reasoning without CoT (No-CoT), with explicit CoT, and with implicit CoT via knowledge distillation.
   </div>
   <div style="flex: 2 1 400px;">
-    <img src="../images/implicit_knowledge_distill.png" alt="Summary of implicit CoT results" style="max-width: 80%; height: auto; display: block; margin: 0 auto;">
+    <img src="../images/implicit_knowledge_distill.png" alt="Summary of implicit CoT results" style="max-width: 90%; height: auto; display: block; margin: 0 auto;">
   </div>
 </div>
 
@@ -249,7 +252,13 @@ In December of 2024, researchers at Meta AI released a paper titled [Training La
 
 ### High-Level Overview
 
-Coconut is a fine-tuning and test-time paradigm. The authors begin with a pretrained LM $$\mathcal{M} = u \circ \mathsf{Transformer} \circ e: V \to \mathbb{R}^d \to \mathbb{R}^d \to V$$, where $V$ is the set of tokens in the vocabulary and $d$ is the embedding dimension (in their paper, they take GPT-2). Step-by-step, they train $\mathcal{M}$ to use more tokens during a "latent phase" where transformer layer outputs are directly fed back into the first transformer layer, before jumping into "language mode" and generating tokens normally. They use cross-entropy loss on only the normally-generated tokens to allow the model to learn its own internal methods for solving various problems. 
+Coconut is a fine-tuning and test-time paradigm. The authors begin with a pretrained LM
+
+$$
+\mathcal{M} = V \xrightarrow{e} \mathbb{R}^d \xrightarrow{\mathsf{Transformer}} \mathbb{R}^d \xrightarrow{u} V~,
+$$ 
+
+where $V$ is the set of tokens in the vocabulary and $d$ is the embedding dimension (in their paper, they take GPT-2). Step-by-step, they train $\mathcal{M}$ to use more tokens during a "latent phase" where transformer layer outputs are directly fed back into the first transformer layer, before jumping into "language mode" and generating tokens normally. They use cross-entropy loss on only the normally-generated tokens to allow the model to learn its own internal methods for solving various problems. 
 
 To be precise, given a sequence $\vec{x} = (x_1, \dots, x_n)$ of input tokens and allowing the model $\ell$ latent thoughts, the model autoregressively computes latent thoughts 
 
@@ -260,14 +269,30 @@ $$
 before allowing the normally-generated tokens $w_j$ to be generated recursively as
 
 $$
-w_j = u\left(\mathsf{Transformer}(\overbrace{e(x_1), \dots, e(x_n)}^{\text{input tokens}}, \overbrace{t_1, \dots, t_{\ell}}^{\text{latent thoughts}}, \overbrace{e(w_1), \dots, e(w_{j-1})}^{\text{normal tokens}}\right)
+w_j = u\left(\mathsf{Transformer}\left(\overbrace{e(x_1), \dots, e(x_n)}^{\text{input tokens}}, \overbrace{t_1, \dots, t_{\ell}}^{\text{latent thoughts}}, \overbrace{e(w_1), \dots, e(w_{j-1})}^{\text{normal tokens}}\right)\right)
 $$
 
 ### Results
 
-Coconut surpasses vanilla CoT on a handful of tasks ([ProntoQA](https://arxiv.org/abs/2210.01240) and ProsQA, introduced in the Coconut paper) by a wide margin, with significant decreases in token generation (ten times fewer in the case of ProntoQA), while it comes somewhat close to vanilla CoT on the [GSM8K dataset](https://arxiv.org/abs/2110.14168), with three times fewer tokens generated. These suggest that models employing Coconut are effectively learning to utilize the additional flexibility afforded to them 
+Coconut surpasses vanilla CoT on a handful of tasks ([ProntoQA](https://arxiv.org/abs/2210.01240) and ProsQA, introduced in the Coconut paper) by a wide margin, with significant decreases in token generation (ten times fewer in the case of ProntoQA), while it comes somewhat close to vanilla CoT on the [GSM8K dataset](https://arxiv.org/abs/2110.14168), with three times fewer tokens generated. These suggest that models employing Coconut are effectively learning to utilize the additional flexibility afforded to them by reasoning in latent space.
 
 ### Coconut Curriculum
+
+Given that LMs have not generally been trained to reason continuously in latent space, the exact training curriculum is crucial for Coconut to work effectivelly. Hao et al. start with a CoT dataset, such as GSM8K, where questions, reasoning steps, and answers are clearly delimited. For a handful of epochs, the model is trained to predict the reasoning steps and answer, as in vanilla CoT. In each subsequent training stage, the first remaining reasoning step is replaced with a `<cot>` token (indicating "continuous thought") surrounded by `<bot>` and `<eot>` (for "beginning" and "end of thought") and the model is trained (via cross-entropy loss) to predict the subsequent reasoning steps and the answer. This is iterated until no more reasoning steps remain, and the model is merely tasked with predicting the answer.
+
+> **Coconut Curriciulum**
+>
+> - [Question] [Step 1] [Step 2] ... [Step N] [Answer]
+> - [Question] `<bot>` `<cot>` `<eot>` [Step 2] ... [Step N] [Answer]
+> - [Question] `<bot>` `<cot>` ... `<cot>` `<eot>` [Step N] [Answer]
+> - [Question] `<bot>` `<cot>` ... `<cot>` `<eot>` [Answer]
+
+The decision to subsume reasoning steps left-to-right is a smart one: in doing so, the authors train the model to "sub-verbalize" steps in the order they occur. 
+
+> **Aside**
+>
+> A few months after the Coconut paper, [Geiping et al. (2025)](https://arxiv.org/pdf/2502.05171) published work on using recurrent-depth LMs alongside latent reasoning to scale test-time compute. Their results are impressive, using a different architecture from Coconut and the other approaches considered in this post.
+
 
 
 # Our Experimental Setup
@@ -281,7 +306,6 @@ Our hypothesis is that by first training a model on the Coconut curriculum, we t
 > Ultimately, our goal is to train a model to *flexibly* use more or less compute as it sees fit via some form of [routing or mixture-of-experts](https://arxiv.org/pdf/2409.14107). That way, models could decide to use only certain layers or attention heads in situations where less compute is needed, but choose to use the entire model when the extra compute would be particularly helpful. 
 
 In our preliminary explorations of pruned Coconut, we work with Llama 3.2 1B, a state-of-the-art LM lightweight enough to run and be fine-tuned on a single GPU. We use the [Hugging Face](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) implementation of Llama 3.2 1B running on a single Nvidia A100 GPU.
-
 
 ## Overview of the Llama 3.2 1B architecture
 
@@ -324,3 +348,17 @@ These combine to give a total of $16 \times (12,582,912 + 50,331,648) = 1,006,63
 > This explains why `q_proj` and `k_proj` have different dimensions in the `LlamaAttention` module: across 32 attention heads, there are 32 query matrices (with hidden dimension $2048 \div 32 = 64$), but only 8 key and value matrices (with hidden dimension $512 \div 8 = 64$).
 >
 > GQA can help greatly with the large memory requirements of multi-head attention, with only small losses in accuracy. Ainslie et al. (2023) show that GQA with $H / 8$ groups can reduce the time per sample by nearly 90% while losing marginal accuracy.
+
+## Experiments to Run
+
+While our work is still in its infancy, we plan to run a handful of preliminary experiments:
+- training a model with the Coconut curriculum, removing layer(s) determined by some form of angular block distance or testing on a validation set, and healing the model
+- doing the same with attention head pruning 
+- combining the two in one direction or another
+- use the various pruned models to explore **scaling laws for test-time compute**: what are the limits on accuracy of a reasoning model given a fixed amount of compute?
+
+> **Goal**
+>
+> Train a Coconut model to flexibly choose to drop certain layers or attention heads at test-time, to balance accuracy with efficiency. 
+
+It will be interesting to see how models could allocate either more layers or more tokens during reasoning. 
