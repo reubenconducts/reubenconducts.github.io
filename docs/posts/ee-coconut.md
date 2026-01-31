@@ -186,7 +186,7 @@ Chain-of-thought prompting was systematically studied in a [landmark paper](http
     <strong>Figure 1:</strong> Summary of results from Wei et al. (2022). They study three different datasets including GSM8K (a dataset of grade-school math word problems) with three groups of models of varying sizes. Their results show that CoT prompting leads to significant reasoning gains on larger models when reasoning about tasks that scale roughly linearly.
   </div>
   <div style="flex: 2 1 400px;">
-    <img src="../images/cot_original_summary.png" alt="Summary of CoT results" style="max-width: 90%; height: auto; display: block; margin: 0 auto;">
+    <img src="/images/cot_original_summary.png" alt="Summary of CoT results" style="max-width: 90%; height: auto; display: block; margin: 0 auto;">
   </div>
 </div>
 
@@ -234,7 +234,7 @@ This is precisely what [Deng et al. (2023)](https://arxiv.org/pdf/2311.01460) an
     <strong>Figure 2:</strong> Summary of results from Deng et al. (2023). They study GSM8K, 4-digit multiplication, and 5-digit multiplication. They compare reasoning without CoT (No-CoT), with explicit CoT, and with implicit CoT via knowledge distillation.
   </div>
   <div style="flex: 2 1 400px;">
-    <img src="../images/implicit_knowledge_distill.png" alt="Summary of implicit CoT results" style="max-width: 90%; height: auto; display: block; margin: 0 auto;">
+    <img src="/images/implicit_knowledge_distill.png" alt="Summary of implicit CoT results" style="max-width: 90%; height: auto; display: block; margin: 0 auto;">
   </div>
 </div>
 
