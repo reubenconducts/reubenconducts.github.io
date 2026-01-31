@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import mathjax3 from 'markdown-it-mathjax3'
+import container from 'markdown-it-container'
 
 const customElements = [
   'mjx-container',
@@ -93,16 +94,21 @@ const customElements = [
 
 export default defineConfig({
   title: 'Reuben Stern',
-  description: 'Conductor, mathematician, person who likes to nerd out',
+  description: 'Kernel Engineer, Conductor, Mathematician',
   base: '/',
+  appearance: 'light',
 
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
       { text: 'About', link: '/about' },
-      { text: 'Archive', link: '/archive' },
-      { text: 'Categories', link: '/categories' }
+      { text: 'Resources', link: '/resources'},
     ],
+
+    outline: {
+      level: [2, 3],
+      label: 'On this page'
+    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/reubenconducts' }
@@ -117,6 +123,23 @@ export default defineConfig({
   markdown: {
     config: (md) => {
       md.use(mathjax3)
+
+      // Register custom containers
+      const containerTypes = ['definition', 'theorem', 'lemma', 'proposition', 'corollary', 'example', 'aside']
+
+      containerTypes.forEach(type => {
+        md.use(container, type, {
+          render: (tokens: any[], idx: number) => {
+            const token = tokens[idx]
+            const info = token.info.trim().slice(type.length).trim()
+            if (token.nesting === 1) {
+              return `<div class="custom-block ${type}"><p class="custom-block-title">${info}</p>\n`
+            } else {
+              return '</div>\n'
+            }
+          }
+        })
+      })
     }
   },
 

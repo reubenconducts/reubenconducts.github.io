@@ -1,0 +1,265 @@
+/**
+ * Customize default theme styling by overriding CSS variables:
+ * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
+ */
+
+/* Import Linux Libertine font */
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Libertinus+Serif:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+/**
+ * Typography - Linux Libertine Style
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* Using Libertinus Serif (closest to Linux Libertine available on Google Fonts) */
+  --vp-font-family-base: 'Libertinus Serif', 'Libre Baskerville', 'Linux Libertine', Georgia, serif;
+  --vp-font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+  /* Slightly larger base font for better serif readability */
+  --vp-font-size-base: 19px;
+  --vp-line-height-base: 1.7;
+}
+
+/**
+ * Colors - Off-white with Lavender Accents
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* Lavender brand colors */
+  --vp-c-brand: #8b7ab8;
+  --vp-c-brand-light: #a89cc7;
+  --vp-c-brand-lighter: #c5bdd6;
+  --vp-c-brand-dark: #7a68a6;
+  --vp-c-brand-darker: #695795;
+
+  --vp-c-brand-1: #8b7ab8;
+  --vp-c-brand-2: #a89cc7;
+  --vp-c-brand-3: #c5bdd6;
+  --vp-c-brand-soft: #e8e4f3;
+
+  /* Off-white background colors */
+  --vp-c-bg: #faf9f6;
+  --vp-c-bg-alt: #f5f4f1;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: #f0ede8;
+
+  /* Text colors */
+  --vp-c-text-1: rgba(40, 38, 35, 0.95);
+  --vp-c-text-2: rgba(40, 38, 35, 0.75);
+  --vp-c-text-3: rgba(40, 38, 35, 0.55);
+
+  /* Borders */
+  --vp-c-divider: rgba(139, 122, 184, 0.15);
+  --vp-c-divider-light: rgba(139, 122, 184, 0.08);
+  --vp-c-gutter: rgba(139, 122, 184, 0.08);
+
+  /* Component colors */
+  --vp-button-brand-bg: #8b7ab8;
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-hover-bg: #7a68a6;
+  --vp-button-brand-active-bg: #695795;
+
+  --vp-button-alt-bg: #f5f4f1;
+  --vp-button-alt-text: rgba(40, 38, 35, 0.95);
+  --vp-button-alt-hover-bg: #e8e4f3;
+
+  --vp-c-default-1: var(--vp-c-text-1);
+  --vp-c-default-2: var(--vp-c-text-2);
+  --vp-c-default-3: var(--vp-c-text-3);
+  --vp-c-default-soft: #f0ede8;
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(135deg, #8b7ab8 10%, #c5bdd6 100%);
+
+  /* Custom block colors */
+  /* Info block (blue tones) */
+  --vp-custom-block-info-border: #8b7ab8;
+  --vp-custom-block-info-text: rgba(40, 38, 35, 0.95);
+  --vp-custom-block-info-bg: #f5f3f9;
+  --vp-custom-block-info-code-bg: #e8e4f3;
+
+  /* Tip block (green tones) */
+  --vp-custom-block-tip-border: #7ab88b;
+  --vp-custom-block-tip-text: rgba(40, 38, 35, 0.95);
+  --vp-custom-block-tip-bg: #f3f9f5;
+  --vp-custom-block-tip-code-bg: #e4f3e8;
+
+  /* Warning block (yellow/orange tones) */
+  --vp-custom-block-warning-border: #d4a574;
+  --vp-custom-block-warning-text: rgba(40, 38, 35, 0.95);
+  --vp-custom-block-warning-bg: #faf8f3;
+  --vp-custom-block-warning-code-bg: #f5f0e8;
+
+  /* Danger block (red tones) */
+  --vp-custom-block-danger-border: #c77a7a;
+  --vp-custom-block-danger-text: rgba(40, 38, 35, 0.95);
+  --vp-custom-block-danger-bg: #faf3f3;
+  --vp-custom-block-danger-code-bg: #f5e8e8;
+
+  /* Details block */
+  --vp-custom-block-details-border: #a89cc7;
+  --vp-custom-block-details-text: rgba(40, 38, 35, 0.95);
+  --vp-custom-block-details-bg: #faf9f6;
+  --vp-custom-block-details-code-bg: #f0ede8;
+}
+
+/**
+ * Spacing & Layout
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-layout-max-width: 1440px;
+}
+
+/**
+ * Custom styles
+ * -------------------------------------------------------------------------- */
+
+/* Ensure light mode styling on body */
+.VPDoc,
+.VPHome,
+.VPNav {
+  background-color: var(--vp-c-bg);
+}
+
+/* Style the navbar with off-white background */
+.VPNav {
+  background-color: var(--vp-c-bg) !important;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+/* Constrain home page width to match doc pages + sidebar */
+.VPHome {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.VPHome .VPHomeHero,
+.VPHome .VPHomeFeatures,
+.VPHome .vp-doc {
+  max-width: 100%;
+}
+
+/* Custom containers with auto-numbering */
+/* Reset shared counter at the start of each page */
+.vp-doc {
+  counter-reset: numbered-block;
+}
+
+/* All numbered containers increment the same counter */
+.custom-block.definition,
+.custom-block.theorem,
+.custom-block.lemma,
+.custom-block.proposition,
+.custom-block.corollary,
+.custom-block.example {
+  counter-increment: numbered-block;
+}
+
+/* Definition container */
+.custom-block.definition {
+  border-color: #8b7ab8;
+  background-color: #f5f3f9;
+}
+
+.custom-block.definition .custom-block-title::before {
+  content: "Definition " counter(numbered-block);
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.custom-block.definition .custom-block-title:empty::before {
+  content: "Definition " counter(numbered-block);
+}
+
+/* Theorem container */
+.custom-block.theorem {
+  border-color: #7a68a6;
+  background-color: #f0ede8;
+}
+
+.custom-block.theorem .custom-block-title::before {
+  content: "Theorem " counter(numbered-block);
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.custom-block.theorem .custom-block-title:empty::before {
+  content: "Theorem " counter(numbered-block);
+}
+
+/* Lemma container */
+.custom-block.lemma {
+  border-color: #a89cc7;
+  background-color: #faf8f5;
+}
+
+.custom-block.lemma .custom-block-title::before {
+  content: "Lemma " counter(numbered-block);
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.custom-block.lemma .custom-block-title:empty::before {
+  content: "Lemma " counter(numbered-block);
+}
+
+/* Proposition container */
+.custom-block.proposition {
+  border-color: #8b7ab8;
+  background-color: #f5f3f9;
+}
+
+.custom-block.proposition .custom-block-title::before {
+  content: "Proposition " counter(numbered-block);
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.custom-block.proposition .custom-block-title:empty::before {
+  content: "Proposition " counter(numbered-block);
+}
+
+/* Corollary container */
+.custom-block.corollary {
+  border-color: #a89cc7;
+  background-color: #faf8f5;
+}
+
+.custom-block.corollary .custom-block-title::before {
+  content: "Corollary " counter(numbered-block);
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.custom-block.corollary .custom-block-title:empty::before {
+  content: "Corollary " counter(numbered-block);
+}
+
+/* Example container */
+.custom-block.example {
+  border-color: #7ab88b;
+  background-color: #f3f9f5;
+}
+
+.custom-block.example .custom-block-title::before {
+  content: "Example " counter(numbered-block);
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.custom-block.example .custom-block-title:empty::before {
+  content: "Example " counter(numbered-block);
+}
+
+/* Aside container (no numbering) */
+.custom-block.aside {
+  border-color: #c5bdd6;
+  background-color: #faf9f6;
+  border-left-width: 3px;
+}
+
+.custom-block.aside .custom-block-title {
+  font-weight: 600;
+}
