@@ -101,12 +101,25 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'About', link: '/about' },
-      { text: 'Resources', link: '/resources'},
+      {
+        text: 'Blog',
+        items: [
+          { text: 'All Posts', link: '/archive' },
+          { text: 'Lost in the SASS', link: '/posts/lost-in-the-sass/about-lits' }
+        ]
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'Glossary', link: '/glossary' },
+          { text: 'Resources', link: '/resources' }
+        ]
+      },
+      { text: 'About', link: '/about' }
     ],
 
     outline: {
-      level: [2, 3],
+      level: [2, 4],
       label: 'On this page'
     },
 

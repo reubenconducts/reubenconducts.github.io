@@ -6,28 +6,74 @@ tags: [GPU, SASS, NVIDIA, Assembly, CUDA]
 
 # Lost in the SASS
 
-**A blog post series exploring NVIDIA GPU assembly**
+**A journey through NVIDIA GPU assembly programming**
 
-::: warning Work in Progress
-This series is currently under development. Check back soon for updates!
+As we push closer to peak computational performance on GPUs, understanding the assembly language becomes crucial. This series explores NVIDIA's PTX (Parallel Thread Execution) intermediate language and SASS (Streaming ASSembler) machine code, uncovering how CUDA kernels are transformed and optimized at the lowest level.
+
+::: aside What You'll Learn
+From reading PTX and SASS disassembly to understanding instruction scheduling, memory access patterns, and warp-level optimizations, this series covers the essential knowledge for serious GPU kernel developers.
 :::
 
-## About This Series
+## Series Contents
 
-This series is all about SASS and how to use it.
+::: info Current Status
+This series is actively being written. New installments will be added regularly.
+:::
 
-## Planned Topics
+### Part 0: Biology of a CUDA Kernel
+[Under construction](/posts/lost-in-the-sass/00/biology-of-a-kernel)
 
-[Installment 0](/posts/lost-in-the-sass/00-introduction/content.md)
+Understanding the life cycle and anatomy of a CUDA kernel from development to execution.
 
-### Part 1: Introduction to SASS
+### Part 1: Instruction Taxonomy, PTX vs. SASS
+*Coming soon*
 
-### Part 2: Memory Operations
+#### Appendix A: Writing and Profiling a CuTe DSL Kernel
+*Coming soon*
 
-### Part 3: Arithmetic and Logic
+#### Appendix B: Registers
+*Coming soon*
+
+### Part 2: Arithmetic
+*Coming soon*
+
+### Part 3: Memory Management
+*Coming soon*
 
 ### Part 4: Control Flow
+*Coming soon*
 
-### Part 5: Advanced Topics
+### Part 5: Comparison and Predication
+*Coming soon*
 
-*Have questions or suggestions? Reach out at [reuben-stern@colfax-intl.com](mailto:reuben-stern@colfax-intl.com)*
+### Part 6: Synchronization
+*Coming soon*
+
+### Part 7: Tensor Operations
+*Coming soon*
+
+### Part 8: Asynchronous Operations
+*Coming soon*
+
+### Part 9: Scheduling and Hazards
+*Coming soon*
+
+#### Appendix A: Register Allocation, Spills, and Consequences
+*Coming soon*
+
+### Part 10: Bit Manipulation and Warp-level Primitives
+*Coming soon*
+
+### Epilogue: Dissecting a GEMM Kernel on SM80, 90, and 100
+*Coming soon*
+
+---
+
+## Resources
+
+- [Instruction Glossary](/glossary) - Quick reference for PTX and SASS instructions
+- [External Resources](/resources) - Tools and documentation links
+
+---
+
+*Questions or suggestions? [Get in touch](mailto:reuben-stern@colfax-intl.com)*

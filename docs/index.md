@@ -3,21 +3,28 @@ layout: home
 
 hero:
   name: "Reuben Stern"
-  text:
+  text: "Kernel Engineer, Conductor, Mathematician"
+  tagline: "Thoughts on GPU programming and reaching the Speed of Light"
   actions:
     - theme: brand
-      text: About
+      text: Read the Blog
+      link: /archive
+    - theme: alt
+      text: About Me
       link: /about
-  features:
-  - title: Latest Posts
-    details: Thoughts on language models, mathematics, and more
+
+features:
+  - title: Lost in the SASS
+    details: A deep dive into NVIDIA GPU assembly programming, from PTX to SASS
+    link: /posts/lost-in-the-sass/about-lits
+  - title: Instruction Glossary
+    details: Comprehensive reference for PTX and SASS instructions with examples
+    link: /glossary
+  - title: Technical Resources
+    details: Tools, documentation, and references for GPU kernel development
+    link: /resources
 ---
 
-::: danger WARNING
-This site is a work in progress!
+::: info
+This website is a work in progress! All content is subject to change; read at your own risk.
 :::
-
-## Recent Posts
-
-- [Lost in the SASS](/posts/lost-in-the-sass/about-lits) - A blog series exploring NVIDIA GPU assembly (WIP)
-<!-- [I think you just fell out of a Coconut tree!](/posts/ee-coconut) - Exploring inference-time scaling and optimization in language models -->
