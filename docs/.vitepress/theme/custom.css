@@ -3,8 +3,8 @@
  * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
  */
 
-/* Import Linux Libertine font */
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Libertinus+Serif:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Libertinus+Serif:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap');
 
 /**
  * Typography - Linux Libertine Style
@@ -13,11 +13,23 @@
 :root {
   /* Using Libertinus Serif (closest to Linux Libertine available on Google Fonts) */
   --vp-font-family-base: 'Libertinus Serif', 'Libre Baskerville', 'Linux Libertine', Georgia, serif;
-  --vp-font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Slightly larger base font for better serif readability */
   --vp-font-size-base: 19px;
   --vp-line-height-base: 1.7;
+
+  /* Code font slightly smaller than text */
+  --vp-code-font-size: 0.9em;
+  --vp-code-line-height: 1.6;
+
+  /* Code block backgrounds - darker lavender (override Catppuccin default) */
+  --vp-code-bg: #ebe7f3;
+  --vp-code-block-bg: #ebe7f3;
+  --vp-c-code-bg: #ebe7f3;
+
+  /* Inline code */
+  --vp-c-text-code: #8839ef;
 }
 
 /**
@@ -126,6 +138,16 @@
 .VPNav {
   background-color: var(--vp-c-bg) !important;
   border-bottom: 1px solid var(--vp-c-divider);
+}
+
+/* All headers in lavender */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4,
+.vp-doc h5,
+.vp-doc h6 {
+  color: #8b7ab8;
 }
 
 /* Constrain home page width to match doc pages + sidebar */
@@ -262,4 +284,37 @@
 
 .custom-block.aside .custom-block-title {
   font-weight: 600;
+}
+
+/* Override Catppuccin Latte background with darker lavender */
+.vp-doc div[class*='language-'],
+.vp-doc pre,
+.vp-doc code {
+  background-color: #ebe7f3 !important;
+}
+
+.vp-doc .shiki,
+.vp-doc .shiki span {
+  background-color: #ebe7f3 !important;
+}
+
+/* SASS syntax highlighting */
+.language-sass .sass-inst {
+  color: #1e66f5 !important; /* Catppuccin blue - instructions */
+}
+
+.language-sass .sass-mod {
+  color: #4c4f69 !important; /* Catppuccin text - modifiers */
+}
+
+.language-sass .sass-reg {
+  color: #8839ef !important; /* Catppuccin mauve - registers */
+}
+
+.language-sass .sass-desc {
+  color: #d20f39 !important; /* Catppuccin red - memory descriptors */
+}
+
+.language-sass .sass-num {
+  color: #fe640b !important; /* Catppuccin peach - numbers */
 }

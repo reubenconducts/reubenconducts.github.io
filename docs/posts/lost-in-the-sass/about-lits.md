@@ -18,6 +18,8 @@ This series is all about SASS and how to use it.
 
 ## Planned Topics
 
+[Installment 0](/posts/lost-in-the-sass/00-introduction/content.md)
+
 ### Part 1: Introduction to SASS
 
 ### Part 2: Memory Operations

@@ -96,7 +96,7 @@ export default defineConfig({
   title: 'Reuben Stern',
   description: 'Kernel Engineer, Conductor, Mathematician',
   base: '/',
-  appearance: 'light',
+  appearance: false,
 
   themeConfig: {
     nav: [
@@ -121,6 +121,22 @@ export default defineConfig({
   },
 
   markdown: {
+    theme: {
+      light: 'catppuccin-latte',
+      dark: 'catppuccin-latte'
+    },
+    codeTransformers: [
+      {
+        name: 'sass-highlighter',
+        preprocess(code, options) {
+          if (options.lang === 'sass' || options.lang === 'sass-asm') {
+            // Tell Shiki to treat it as plaintext so we can style it ourselves
+            options.lang = 'text'
+          }
+          return code
+        }
+      }
+    ],
     config: (md) => {
       md.use(mathjax3)
 

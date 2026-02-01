@@ -1,0 +1,77 @@
+{
+  "name": "NVIDIA SASS Assembly",
+  "scopeName": "source.sass.asm",
+  "patterns": [
+    {
+      "comment": "Line comments",
+      "name": "comment.line.double-slash",
+      "match": "//.*$"
+    },
+    {
+      "comment": "Block comments",
+      "name": "comment.block",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "comment": "Instructions",
+      "name": "keyword.control.instruction",
+      "match": "\\b(LDG|STG|LDS|STS|LDGSTS|LDSM|LDL|STL|LD|ST|ATOM|RED|CCTL|MEMBAR|CCTLL|SULD|SUST|SUATOM|SURED|TEX|TLD|TLD4|TMML|TXQ|PIXLD|IMAD|IADD|IADD3|ISETP|IMNMX|IMUL|FLO|SHF|SHL|SHR|BFE|BFI|POPC|FMA|FADD|FMUL|FMNMX|FSET|FSETP|MUFU|RRO|HADD2|HMUL2|HFMA2|HSET2|HSETP2|DADD|DMUL|DFMA|DSETP|DMNMX|MOV|PRMT|SEL|SHFL|P2R|R2P|PLOP3|VOTE|SYNC|BAR|BRA|BRX|JMP|JMX|CALL|RET|EXIT|BRK|CONT|SSY|PBK|PCNT|BREAK|CS2R|S2R|LEPC|NOP|DEPBAR|WARPSYNC)\\b"
+    },
+    {
+      "comment": "Instruction modifiers",
+      "name": "storage.type.modifier",
+      "match": "\\.(E|U8|U16|U32|U64|S8|S16|S32|S64|F16|F32|F64|CONSTANT|EF|LU|64|128|CG|CS|CV|WT|CA|CTA|SM|GPU|SYS|VC|RN|RM|RP|RZ|SAT|FTZ|LT|EQ|LE|GT|NE|GE|NUM|NAN|LO|LS|HI|HS|OFO|CSM|X|AND|OR|XOR|PT|INVALIDATE|CLEAN|DISCARD|WB|IV|RS|TRAP|DIVERG|ALLP|ANYP|EQP|RED|MIN|MAX|INC|DEC|ADD|EXCH|CAS|POPC|ARRIVE|EX)\\b"
+    },
+    {
+      "comment": "Predicate registers",
+      "name": "variable.parameter.register.predicate",
+      "match": "\\b(P[0-7]|PT)\\b"
+    },
+    {
+      "comment": "General purpose registers",
+      "name": "variable.parameter.register",
+      "match": "\\b(R[0-9]+|RZ)\\b"
+    },
+    {
+      "comment": "Uniform registers",
+      "name": "variable.other.constant.register",
+      "match": "\\b(UR[0-9]+|URZ)\\b"
+    },
+    {
+      "comment": "Special registers",
+      "name": "variable.language.special",
+      "match": "\\b(SR_[A-Z_]+|SR[0-9]+)\\b"
+    },
+    {
+      "comment": "Immediate values (hex)",
+      "name": "constant.numeric.hex",
+      "match": "0[xX][0-9a-fA-F]+"
+    },
+    {
+      "comment": "Immediate values (decimal)",
+      "name": "constant.numeric.integer",
+      "match": "\\b[0-9]+\\b"
+    },
+    {
+      "comment": "Labels",
+      "name": "entity.name.function.label",
+      "match": "^[a-zA-Z_][a-zA-Z0-9_]*:"
+    },
+    {
+      "comment": "Brackets",
+      "name": "punctuation.section.brackets",
+      "match": "[\\[\\]]"
+    },
+    {
+      "comment": "Special keywords",
+      "name": "support.type.descriptor",
+      "match": "\\b(desc|c|threadIdx|blockIdx|blockDim|gridDim)\\b"
+    },
+    {
+      "comment": "Commas and separators",
+      "name": "punctuation.separator.comma",
+      "match": ","
+    }
+  ]
+}
