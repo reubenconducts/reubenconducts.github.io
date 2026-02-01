@@ -127,9 +127,9 @@ export default defineConfig({
     },
     codeTransformers: [
       {
-        name: 'sass-highlighter',
+        name: 'custom-asm-highlighter',
         preprocess(code, options) {
-          if (options.lang === 'sass' || options.lang === 'sass-asm') {
+          if (options.lang === 'sass' || options.lang === 'sass-asm' || options.lang === 'ptx') {
             // Tell Shiki to treat it as plaintext so we can style it ourselves
             options.lang = 'text'
           }

@@ -1,12 +1,85 @@
+function highlightPTXLine(line: string): string {
+  // Check for comment
+  const commentIdx = line.indexOf('//')
+  let codePart = commentIdx >= 0 ? line.substring(0, commentIdx) : line
+  let commentPart = commentIdx >= 0 ? line.substring(commentIdx) : ''
+
+  // Escape HTML in code part
+  codePart = codePart
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Directives
+  codePart = codePart.replace(/(\.(version|target|address_size|visible|entry|func|param|reg|local|shared|global|const|align|b8|b16|b32|b64|u8|u16|u32|u64|s8|s16|s32|s64|f16|f32|f64|pred|v2|v4))\b/g, '<span class="ptx-directive">$1</span>')
+
+  // Instructions
+  codePart = codePart.replace(/\b(ld|st|mov|add|sub|mul|mad|div|rem|abs|neg|min|max|cvt|set|setp|selp|and|or|xor|not|shl|shr|bra|brx|call|ret|exit|bar|atom|red|vote|shfl|mad24|mul24|sad|fma|rcp|sqrt|rsqrt|sin|cos|lg2|ex2)\b/g, '<span class="ptx-inst">$1</span>')
+
+  // Registers
+  codePart = codePart.replace(/(%[a-zA-Z_][a-zA-Z0-9_]*|%[rpf]d?[0-9]+)/g, '<span class="ptx-reg">$1</span>')
+
+  // Numbers
+  codePart = codePart.replace(/\b(0[xX][0-9a-fA-F]+|[0-9]+\.?[0-9]*[fF]?)\b/g, '<span class="ptx-num">$1</span>')
+
+  // Labels
+  if (/^[a-zA-Z_][a-zA-Z0-9_]*:/.test(codePart)) {
+    codePart = codePart.replace(/^([a-zA-Z_][a-zA-Z0-9_]*):/, '<span class="ptx-label">$1:</span>')
+  }
+
+  // Escape and highlight comment
+  if (commentPart) {
+    commentPart = commentPart
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+    commentPart = '<span class="ptx-comment">' + commentPart + '</span>'
+  }
+
+  return codePart + commentPart
+}
+
+export function highlightPTX() {
+  if (typeof window === 'undefined') return
+
+  // Find all code elements directly
+  const codeElements = document.querySelectorAll('code')
+
+  codeElements.forEach((code) => {
+    // Skip if already processed
+    if (code.classList.contains('ptx-highlighted')) return
+
+    const text = code.textContent || ''
+
+    // Detect PTX code
+    if (!/\.(version|target|address_size|visible|entry|func|param|reg|local)\b/.test(text) &&
+        !/\b(ld|st|mov|add|sub|mul|mad|cvt|setp|bra|ret)\b/.test(text)) return
+
+    // Find parent language block
+    const block = code.closest('div[class*="language-"]')
+    if (block) {
+      block.classList.add('language-ptx')
+    }
+
+    // Mark as processed
+    code.classList.add('ptx-highlighted')
+
+    const lines = text.split('\n')
+    const html = lines.map(highlightPTXLine).join('\n')
+
+    code.innerHTML = html
+  })
+}
+
 export function highlightSass() {
   if (typeof window === 'undefined') return
 
-  // Find all code blocks
-  const codeBlocks = document.querySelectorAll('div[class*="language-"]')
+  // Find all code elements directly
+  const codeElements = document.querySelectorAll('code')
 
-  codeBlocks.forEach((block) => {
-    const code = block.querySelector('code')
-    if (!code) return
+  codeElements.forEach((code) => {
+    // Skip if already processed
+    if (code.classList.contains('sass-highlighted')) return
 
     // Check if this looks like SASS code
     const text = code.textContent || ''
@@ -14,8 +87,14 @@ export function highlightSass() {
     // More permissive detection
     if (!/\b(LDG|STG|LDS|STS|IMAD|IADD|FMA|FADD|FMUL|MOV)\b/.test(text)) return
 
-    // Mark as SASS
-    block.classList.add('language-sass')
+    // Find parent language block
+    const block = code.closest('div[class*="language-"]')
+    if (block) {
+      block.classList.add('language-sass')
+    }
+
+    // Mark as processed
+    code.classList.add('sass-highlighted')
 
     // Get plain text content
     let html = text

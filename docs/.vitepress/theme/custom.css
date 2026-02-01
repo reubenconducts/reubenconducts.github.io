@@ -318,3 +318,30 @@
 .language-sass .sass-num {
   color: #fe640b !important; /* Catppuccin peach - numbers */
 }
+
+/* PTX syntax highlighting */
+.language-ptx .ptx-comment {
+  color: #9ca0b0 !important; /* Catppuccin overlay2 - comments */
+  font-style: italic;
+}
+
+.language-ptx .ptx-directive {
+  color: #8839ef !important; /* Catppuccin mauve - directives */
+}
+
+.language-ptx .ptx-inst {
+  color: #1e66f5 !important; /* Catppuccin blue - instructions */
+}
+
+.language-ptx .ptx-reg {
+  color: #ea76cb !important; /* Catppuccin pink - registers */
+}
+
+.language-ptx .ptx-num {
+  color: #fe640b !important; /* Catppuccin peach - numbers */
+}
+
+.language-ptx .ptx-label {
+  color: #1e66f5 !important; /* Catppuccin blue - labels */
+  font-weight: 600;
+}
