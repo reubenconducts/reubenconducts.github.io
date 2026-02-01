@@ -115,7 +115,8 @@ export default defineConfig({
           { text: 'Resources', link: '/resources' }
         ]
       },
-      { text: 'About', link: '/about' }
+      { text: 'About', link: '/about' },
+      { text: 'Music', link: '/music' },
     ],
 
     outline: {

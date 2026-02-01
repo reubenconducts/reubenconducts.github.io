@@ -20,7 +20,7 @@ From reading PTX and SASS disassembly to understanding instruction scheduling, m
 This series is actively being written. New installments will be added regularly.
 :::
 
-### Part 0: Biology of a CUDA Kernel
+### Introduction: Biology of a CUDA Kernel
 [Under construction](/posts/lost-in-the-sass/00/biology-of-a-kernel)
 
 Understanding the life cycle and anatomy of a CUDA kernel from development to execution.
@@ -28,10 +28,10 @@ Understanding the life cycle and anatomy of a CUDA kernel from development to ex
 ### Part 1: Instruction Taxonomy, PTX vs. SASS
 *Coming soon*
 
-#### Appendix A: Writing and Profiling a CuTe DSL Kernel
-*Coming soon*
+#### *Appendix A: Writing and Profiling a CuTe DSL Kernel*
+[Under construction](/posts/lost-in-the-sass/01/01a/writing-cute-dsl)
 
-#### Appendix B: Registers
+#### *Appendix B: Registers*
 *Coming soon*
 
 ### Part 2: Arithmetic
@@ -58,7 +58,7 @@ Understanding the life cycle and anatomy of a CUDA kernel from development to ex
 ### Part 9: Scheduling and Hazards
 *Coming soon*
 
-#### Appendix A: Register Allocation, Spills, and Consequences
+#### *Appendix A: Register Allocation, Spills, and Consequences*
 *Coming soon*
 
 ### Part 10: Bit Manipulation and Warp-level Primitives
