@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: "Reuben Stern"
-  text: "Kernel Engineer, Conductor, Mathematician"
-  tagline: "Thoughts on GPU programming and reaching the Speed of Light"
+  text: "Research Scientist, Conductor, Mathematician"
+  tagline: "Reaching the Speed of Light"
   actions:
     - theme: brand
       text: Read the Blog
