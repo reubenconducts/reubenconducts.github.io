@@ -1,86 +1,90 @@
 ---
-title: PTX & SASS Instruction Glossary
+title: SASS Instruction Glossary
 description: Comprehensive reference for NVIDIA PTX and SASS assembly instructions
 ---
 
-# PTX & SASS Instruction Glossary
+# SASS Instruction Glossary
 
-A comprehensive reference guide for NVIDIA PTX and SASS instructions, organized by category as they appear in Nsight Compute.
+A comprehensive reference guide for NVIDIA SASS instructions, organized by category as they appear in Nsight Compute. Each instruction is accompanied by sample usage and, where possible, related PTX.
 
 ::: info
 This glossary is under construction.
 :::
 
 ## Uniform Datapath
-```sass
-USEL
-UIADD3
-UVIRTCOUNT
-USETMAXREG
-```
+
+::: details `USEL`
+:::
+
+::: details `UIADD3`
+:::
+
+::: details `UVIRTCOUNT`
+:::
+
+::: details `USETMAXREG`
+:::
 
 ## Integer
 
-```sass
-IMAD
-```
+::: details `IMAD`
+:::
 
 ## Control
 
-```sass
-@!P0 BRA
-```
+::: details `@!P0 BRA`
+:::
 
 ## Predicate
 
-```sass
-PLOP3
-```
+::: details `PLOP3`
+:::
 
 ## Conversion
 
-```sass
-I2F
-F2I
-```
+::: details `I2F`
+:::
+
+::: details `F2I`
+:::
+
 ## Tensor Core Memory
 
-```sass
-UTCHMMA
-UTCBAR
+::: details `UTCHMMA`
+:::
 
-```
+::: details `UTCBAR`
+:::
+
 ## Tensor Memory Access
 
-```sass
-UTMALDG
-```
+::: details `UTMALDG`
+:::
+
 ## Load/Store
 
-```sass
-LDG
-```
+::: details `LDG`
+:::
 
 ## Floating Point
 
-```sass
-FMNMX3
-```
+::: details `FMNMX3`
+:::
 
 ## Movement
 
-```sass
-SHFL.DOWN
-SHFL.UP
-```
+::: details `SHFL.DOWN`
+:::
+
+::: details `SHFL.UP`
+:::
 
 ## Miscellaneous
-```sass
-NOP
-```
+
+::: details `NOP`
+:::
 
 ## Other
 
-```sass
-F2FP
-```
+::: details `F2FP`
+:::
