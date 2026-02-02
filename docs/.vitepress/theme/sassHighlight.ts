@@ -81,14 +81,20 @@ export function highlightSass() {
     // Skip if already processed
     if (code.classList.contains('sass-highlighted')) return
 
+    // Find parent language block
+    const block = code.closest('div[class*="language-"]')
+
+    // Check if explicitly marked as sass
+    const isExplicitSass = block?.className.includes('language-sass')
+
     // Check if this looks like SASS code
     const text = code.textContent || ''
 
-    // More permissive detection
-    if (!/\b(LDG|STG|LDS|STS|IMAD|IADD|FMA|FADD|FMUL|MOV)\b/.test(text)) return
+    // More permissive detection - check for common SASS instructions
+    const hasSassInstructions = /\b(LDG|STG|LDS|STS|LDGSTS|LDSM|LDL|STL|LD|ST|LDC|LDCU|ATOM|RED|CCTL|MEMBAR|IMAD|IADD|IADD3|ISETP|UISETP|IMNMX|IMUL|FLO|SHF|SHL|SHR|USHF|BFE|BFI|POPC|FMA|FADD|FMUL|FMNMX|FSET|FSETP|MUFU|RRO|HADD2|HMUL2|HFMA2|MOV|PRMT|SEL|USEL|SHFL|P2R|R2P|R2UR|S2R|BRA|BRX|JMP|JMX|CALL|RET|EXIT|BRK|CONT|NOP|DEPBAR|WARPSYNC)\b/.test(text)
 
-    // Find parent language block
-    const block = code.closest('div[class*="language-"]')
+    if (!isExplicitSass && !hasSassInstructions) return
+
     if (block) {
       block.classList.add('language-sass')
     }
@@ -106,7 +112,7 @@ export function highlightSass() {
       .replace(/>/g, '&gt;')
 
     // Instructions (blue)
-    html = html.replace(/\b(LDG|STG|LDS|STS|LDGSTS|LDSM|LDL|STL|LD|ST|ATOM|RED|CCTL|MEMBAR|IMAD|IADD|IADD3|ISETP|IMNMX|IMUL|FLO|SHF|SHL|SHR|BFE|BFI|POPC|FMA|FADD|FMUL|FMNMX|FSET|FSETP|MUFU|RRO|HADD2|HMUL2|HFMA2|MOV|PRMT|SEL|SHFL|P2R|R2P|BRA|BRX|JMP|JMX|CALL|RET|EXIT|BRK|CONT|NOP|DEPBAR|WARPSYNC)\b/g, '<span class="sass-inst">$1</span>')
+    html = html.replace(/\b(LDG|STG|LDS|STS|LDGSTS|LDSM|LDL|STL|LD|ST|LDC|LDCU|ATOM|RED|CCTL|MEMBAR|IMAD|IADD|IADD3|ISETP|UISETP|IMNMX|IMUL|FLO|SHF|SHL|SHR|USHF|BFE|BFI|POPC|FMA|FFMA|FADD|FMUL|FMNMX|FSET|FSETP|FSEL|MUFU|RRO|HADD2|HMUL2|HFMA2|HMMA|DMMA|MOV|PRMT|SEL|USEL|SHFL|P2R|R2P|R2UR|S2R|BRA|BRX|JMP|JMX|CALL|RET|EXIT|BRK|CONT|NOP|DEPBAR|WARPSYNC)\b/g, '<span class="sass-inst">$1</span>')
 
     // Modifiers
     html = html.replace(/(\.[A-Z0-9]+)\b/g, '<span class="sass-mod">$1</span>')
