@@ -24,11 +24,11 @@
   --vp-code-line-height: 1.6;
 
   /* Code block backgrounds - darker lavender (override Catppuccin default) */
-  --vp-code-bg: #ebe7f3;
-  --vp-code-block-bg: #ebe7f3;
-  --vp-c-code-bg: #ebe7f3;
+  --vp-code-bg: transparent;  /* Inline code: no background */
+  --vp-code-block-bg: #ebe7f3;  /* Code blocks: keep lavender */
+  --vp-c-code-bg: transparent;  /* Inline code: no background */
 
-  /* Inline code */
+  /* Inline code text color (purple) */
   --vp-c-text-code: #8839ef;
 }
 
@@ -351,4 +351,51 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif !important;
   font-size: 1em !important;
   letter-spacing: 0.02em;
+}
+
+/* Remove background and padding from inline code (not code blocks) */
+.vp-doc p code,
+.vp-doc li code,
+.vp-doc h1 code,
+.vp-doc h2 code,
+.vp-doc h3 code,
+.vp-doc h4 code,
+.vp-doc h5 code,
+.vp-doc h6 code,
+.vp-doc td code {
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+/* Fix details block triangle for mobile - use CSS triangle instead of emoji */
+.custom-block.details summary {
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.custom-block.details summary::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0.4em 0 0.4em 0.6em;
+  border-color: transparent transparent transparent currentColor;
+  transition: transform 0.2s;
+}
+
+.custom-block.details[open] summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+/* Hide the default marker */
+.custom-block.details summary {
+  list-style: none;
+}
+
+.custom-block.details summary::-webkit-details-marker {
+  display: none;
 }

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 import mathjax3 from 'markdown-it-mathjax3'
 import container from 'markdown-it-container'
+import { getMathJaxMacrosString, mathjaxMacros } from './mathjax-macros.mts'
 
 const customElements = [
   'mjx-container',
@@ -117,6 +118,7 @@ export default defineConfig({
       },
       { text: 'About', link: '/about' },
       { text: 'Music', link: '/music' },
+      { text: 'Math',  link: '/math'  },
     ],
 
     outline: {
@@ -152,7 +154,16 @@ export default defineConfig({
       }
     ],
     config: (md) => {
-      md.use(mathjax3)
+      md.use(mathjax3, {
+        tex: {
+          macros: mathjaxMacros,
+          packages: {'[+]': ['ams', 'boldsymbol', 'newcommand', 'configmacros', 'action', 'unicode']}
+          // Available packages: base, ams, amscd, bbox, boldsymbol, braket, bussproofs,
+          // cancel, cases, centernot, color, colortbl, empheq, enclose, extpfeil,
+          // gensymb, html, mathtools, mhchem, newcommand, noerrors, noundefined,
+          // physics, textcomp, textmacros, unicode, verb, configmacros, tagformat, etc.
+        }
+      })
 
       // Register custom containers
       const containerTypes = ['definition', 'theorem', 'lemma', 'proposition', 'corollary', 'example', 'aside']
@@ -194,6 +205,8 @@ export default defineConfig({
         tex: {
           inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
           displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
+          packages: {'[+]': ['ams', 'newcommand', 'configmacros', 'action', 'unicode']},
+          macros: ${getMathJaxMacrosString()}
         },
         svg: {
           fontCache: 'global'
