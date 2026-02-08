@@ -1,23 +1,6 @@
 ---
 title: Flex Linear Attention -  Fast and Flexible Fused Linear Attention Implementation
 ---
-
-# {{ $frontmatter.title }}
-
-FlexAttention is an elegant API for defining custom attention variants within the FlashAttention framework. It does so in two parts:
-1. Modifying pre-softmax scores using a `score_mod` callable.
-2. Efficient implementation of block sparsity using on-device metadata tensors.
-
-Linear attention variants partake in a *"state space duality"* between sequential and parallel forms of updates. They are also versions of "online learning" in that they are equivalently thought of as performing gradient descent per iteration. In this proposal, we discuss a possible "FlexLinearAttention" that allows for elegant and simple implementation of linear attention variants and can be worked into a hardware-aware implementation.
-
-## A fused kernel for linear attention
-
-Mamba 2 has a Blackwell-optimized fused kernel. It uses a complicated warp specialization scheme to properly pipeline the intra-chunk and inter-chunk recurrence.
-
-$$
-Y_i = \alpha H_i X_i + B_iH_{i-1} X_{i-1}
-$$
-
 # Flex Linear Attention by Claude
 
 **A Composable Framework for Hardware-Efficient Linear Attention Kernels**
