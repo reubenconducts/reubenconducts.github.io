@@ -106,7 +106,8 @@ export default defineConfig({
         text: 'Blog',
         items: [
           { text: 'All Posts', link: '/archive' },
-          { text: 'Lost in the SASS', link: '/posts/lost-in-the-sass/about-lits' }
+          { text: 'Lost in the SASS', link: '/posts/lost-in-the-sass/about-lits' },
+          { text: 'FlexAttention Backward', link: '/posts/flex-bwd' }
         ]
       },
       {
@@ -137,6 +138,7 @@ export default defineConfig({
   },
 
   markdown: {
+    lineNumbers: true,
     theme: {
       light: 'catppuccin-latte',
       dark: 'catppuccin-latte'
