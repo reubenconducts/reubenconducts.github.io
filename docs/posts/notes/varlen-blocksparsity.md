@@ -80,17 +80,13 @@ class SeqlenInfoQK:
 
         # ... existing setup ...
         return SeqlenInfoQK(
-            offset_q,
-            offset_k,
-            padded_offset_q,
-            padded_offset_k,
+            # ...
             seqlen_q,
             seqlen_k,
             block_offset,
             has_cu_seqlens_q,
             has_cu_seqlens_k,
-            has_seqused_q,
-            has_seqused_k,
+            # ...
         )
 
 # Rest of file kept the same
@@ -98,4 +94,22 @@ class SeqlenInfoQK:
 
 The greatest difficulty is ensuring that the blocksparsity computation kernel emits the proper layout, but that's not a huge challenge and is in-progress already. We will have to carefully comb through all other files to ensure that any blocksparsity logic is updated with the varlen-flexible options (i.e. `get_curr_blocksparse_tensors`), but I believe everything is already compartmentalized.
 
+## Updated approach to index tensors
 
+For a varlen batch with sequence lengths contained in $\mathsf{seqlens}_Q$ and $\mathsf{seqlens}_K$ and batch index $b$, we let
+
+$$
+\mathsf{num}_m(b) = \mathsf{ceildiv}(\mathsf{seqlens}_Q[b], \mathsf{tile}_m)
+\qquad
+\mathsf{num}_n(b) = \mathsf{ceildiv}(\mathsf{seqlens}_K[b], \mathsf{tile}_n)
+$$
+
+We then define
+
+$$
+\mathsf{total}_m = \sum_{b \in B} \mathsf{num}_m(b)
+\qquad
+\mathsf{total}_n = \sum_{b \in B} \mathsf{num}_m(b) \cdot \mathsf{num}_n(b)
+$$
+
+We then have `*_block_cnt: [H, total_m]` and `*_block_idx: [H, total_n]`.
