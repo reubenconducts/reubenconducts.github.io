@@ -67,7 +67,9 @@ Why is this change important, anyway? I'm not even sure that the compiler *isn't
 
 Simply, vectorized `mask_mod` callables will return bit-packed masks. This does mean that `__vec_size__` is not a standalone property of a `mask_mod`, but instead a descriptor of its signature. This added complexity is why I want to keep application and evaluation separate, so that existing `mask_mod`s will drop cleanly into the new framework. Vectorized `mask_mod`s will not be better unilaterally, but there are many situations I could imagine them being a win:
 - `mask_mod`s that use `aux_tensors` that are indexed into contiguously in `kv_idx`, so that we can vectorize the `aux_tensor` loads, as is now allowed for `score_mod`s
-- `mask_mod`s that have some bounds checking where we know, for instance, that if `kv_idx[0] > bound`, that the entire vector is masked/unmasked. This is the case in causal+local attention. As an example, take document masking. We have our `doc_id` tensor of shape `(batch, seqlen)`. With `__vec_size__ == 8`, we could modify the `mask_mod` to be the following:
+- `mask_mod`s that have some bounds checking where we know, for instance, that if `kv_idx[0] > bound`, that the entire vector is masked/unmasked. This is the case in causal+local attention.
+
+As an example, take document masking. We have our `doc_id` tensor of shape `(batch, seqlen)`. With `__vec_size__ == 8`, we could modify the `mask_mod` to be the following:
 ```python
 def document_mask_mod(b_idx, h_idx, q_idx, kv_idx, seqlen, aux_tensors) -> Int8:
     mask = Int8(0)
@@ -94,4 +96,33 @@ def document_mask_mod(b_idx, h_idx, q_idx, kv_idx, seqlen, aux_tensors) -> Int8:
 
     return mask
 
+```
+
+### Combining the two
+
+Suppose we have a `mask_mod` with `__vec_size__ == 32`, so the return type is `Int32` (or whatever 32-bit dtype). The application loop would look something like this:
+```python
+for row in range_constexpr(nrows):
+    masks = cute.make_rmem_tensor((4), dtype=Int32)
+    for col_start in range_constexpr(ncols // vec_size): # probably == 4
+        b_idx = ...
+        h_idx = ...
+        q_idx = ...
+        kv_idx = ...
+        masks[col_start] = mask_mod(
+            b_idx,
+            h_idx,
+            q_idx,
+            kv_idx,
+            seqlen,
+            aux_tensors,
+        )
+    for s in range_constexpr(cute.ceil_div(ncols, 24)):
+        # have to be careful about cross-value iterations
+        for i in range_constexpr(min(24, ncol - s * 24)):
+            curr_col = s * 24 + i
+            curr_mask = curr_col // 32
+            curr_bit = curr_col % 32
+            cond = (masks[curr_mask] >> curr_bit) & 1
+            acc_S[curr_col] = acc_S[curr_col] if Boolean(cond) else -Float32.inf
 ```
